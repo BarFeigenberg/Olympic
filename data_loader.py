@@ -41,6 +41,13 @@ def load_raw_athletics_data():
         return pd.DataFrame()
 
 @st.cache_data
+def load_raw_paris_data():
+    try:
+        return pd.read_csv('medals_total_paris.csv')
+    except FileNotFoundError:
+        return pd.DataFrame()
+
+@st.cache_data
 def load_gapminder_reference():
     # Built-in plotly data for life expectancy and population comparisons
     return px.data.gapminder()
