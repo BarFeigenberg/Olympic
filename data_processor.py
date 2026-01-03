@@ -157,7 +157,7 @@ def get_processed_gapminder_data():
     stats['Region'] = stats['NOC'].map(NOC_TO_CONTINENT).fillna('Western Europe')
 
     gapminder = load_gapminder_reference()
-    years = range(1920, 2025)
+    years = range(1896, 2025)
     all_combos = pd.MultiIndex.from_product([gapminder['country'].unique(), years], names=['country', 'year']).to_frame(index=False)
 
     gap_full = pd.merge(all_combos, gapminder[['country', 'year', 'pop', 'gdpPercap', 'lifeExp', 'iso_alpha', 'continent']], on=['country', 'year'], how='left')
