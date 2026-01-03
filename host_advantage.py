@@ -4,10 +4,12 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 def show_host_advantage(host_data, data, country_ref):
-    st.title("🏠 The Host Effect: Investment vs. Return")
+    st.title("🏠 The Host Effect")
     st.markdown("Does hosting the Olympics actually guarantee more medals?")
     st.divider()
 
+    # Filter dataset to include only rows with medals
+    medals_only = data[data['Medal'] != 'No medal']
     # --- 1. SELECTION DROPDOWN ---
     noc_map = {}
     if not country_ref.empty:

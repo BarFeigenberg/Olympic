@@ -24,7 +24,8 @@ try:
                             ["🌍 Global Overview",
                              "🏠 Host Advantage",
                              "🏃 Athletics Deep Dive",
-                             "📈 Wellness & Winning Over Time"])
+                             "📈 Wellness & Winning Over Time"],
+                            key="main_nav")
     st.sidebar.divider()
 
     if page == "🌍 Global Overview":
