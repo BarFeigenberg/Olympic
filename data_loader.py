@@ -51,3 +51,10 @@ def load_raw_paris_data():
 def load_gapminder_reference():
     # Built-in plotly data for life expectancy and population comparisons
     return px.data.gapminder()
+
+@st.cache_data
+def load_raw_continent_data():
+    try:
+        return pd.read_csv("continent_data.csv")
+    except FileNotFoundError:
+        return pd.DataFrame()

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="172acd16-f0d6-44df-912e-75fe004f01f9" name="Changes" comment="raz">
+      <change afterPath="$PROJECT_DIR$/continent_data.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Olympic_Games_Medal_Tally.csv" beforeDir="false" afterPath="$PROJECT_DIR$/Olympic_Games_Medal_Tally.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Olympics_Country.csv" beforeDir="false" afterPath="$PROJECT_DIR$/Olympics_Country.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_loader.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_loader.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_processor.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_processor.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/global_overview.py" beforeDir="false" afterPath="$PROJECT_DIR$/global_overview.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/host_advantage.py" beforeDir="false" afterPath="$PROJECT_DIR$/host_advantage.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/host_advantage_data.csv" beforeDir="false" afterPath="$PROJECT_DIR$/host_advantage_data.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/wellness_winning.py" beforeDir="false" afterPath="$PROJECT_DIR$/wellness_winning.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 5
+}</component>
+  <component name="ProjectId" id="369zF0MbpicyoLMrlj5ykrbmWB7" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_ADD_EXTERNAL_FILES": "true",
+    "Python.app.executor": "Run",
+    "Python.data_loader.executor": "Run",
+    "Python.pre-processing.executor": "Run",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "git-widget-placeholder": "raz",
+    "last_opened_file_path": "C:/Users/raz43/PycharmProjects/Olympic"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\raz43\PycharmProjects\Olympic\data" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\raz43\PycharmProjects\Olympic\data" />
+    </key>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-python-sdk-50da183f06c8-d3b881c8e49f-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-233.13135.95" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="172acd16-f0d6-44df-912e-75fe004f01f9" name="Changes" comment="" />
+      <created>1764433467962</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1764433467962</updated>
+    </task>
+    <task id="LOCAL‎-00001" summary="raz">
+      <option name="closed" value="true" />
+      <created>1767454948980</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL‎-00001" />
+      <option name="project" value="LOCAL‎" />
+      <updated>1767454948980</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
+    <servers />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
+    <MESSAGE value="raz" />
+    <option name="LAST_COMMIT_MESSAGE" value="raz" />
+  </component>
+</project>

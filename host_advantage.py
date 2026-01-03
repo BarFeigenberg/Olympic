@@ -8,11 +8,6 @@ def show_host_advantage(host_data, data, country_ref):
     st.markdown("Does hosting the Olympics actually guarantee more medals?")
     st.divider()
 
-    medals_only = data[data['Medal'] != 'No medal']
-    map_data = medals_only.groupby('country')['Medal'].count().reset_index()
-    map_data.rename(columns={'Medal': 'Total Medals'}, inplace=True)
-    country_list = sorted(map_data['country'].dropna().unique())
-
     # --- 1. SELECTION DROPDOWN ---
     noc_map = {}
     if not country_ref.empty:

@@ -12,6 +12,12 @@ try:
     athletics_df = get_processed_athletics_data()
     gap_df = get_processed_gapminder_data()
     country_ref = load_raw_country_data()
+    medals_data = get_processed_medals_data()
+
+    medals_only = data[data['Medal'] != 'No medal']
+    map_data = medals_data.groupby('country')['total'].sum().reset_index()
+    map_data.rename(columns={'Medal': 'Total Medals'}, inplace=True)
+    country_list = sorted(medals_only['Team'].dropna().unique())
 
     st.sidebar.title("Navigation")
     page = st.sidebar.radio("Go to:",

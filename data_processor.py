@@ -1,9 +1,9 @@
+import os
 import numpy as np
 import re
 from data_loader import *
 
 
-# Fixed: Removed file saving to prevent Streamlit restart loops
 def create_host_advantage_file():
     games_df = load_raw_games_data()
     tally_df = load_raw_tally_data()
@@ -74,36 +74,37 @@ def create_host_advantage_file():
         lambda x: x['Medal_Percentage'] / x['Avg_Percentage'] if x['Avg_Percentage'] > 0 else 0, axis=1
     )
 
-    if not paris_df.empty:
-        france_row = paris_df[paris_df['country_code'] == 'FRA']
-        if not france_row.empty:
-            total_medals_france = france_row['Total'].values[0]
-            total_medals_global_2024 = paris_df['Total'].sum()
-            france_history = all_Percentage[all_Percentage['country_noc'] == 'FRA']
-            avg_france = france_history['Calc_Percentage'].mean() if not france_history.empty else 0
-            current_percentage = total_medals_france / total_medals_global_2024
-            lift_score = current_percentage / avg_france if avg_france > 0 else 0
+    france_row = paris_df[paris_df['country_code'] == 'FRA']
+    total_medals_france = france_row['Total'].values[0]
+    total_medals_global_2024 = paris_df['Total'].sum()
+    france_history = all_Percentage[all_Percentage['country_noc'] == 'FRA']
+    avg_france = france_history['Calc_Percentage'].mean() if not france_history.empty else 0
+    current_percentage = total_medals_france / total_medals_global_2024
+    lift_score = current_percentage / avg_france if avg_france > 0 else 0
 
-            paris_row = pd.DataFrame([{
-                'Year': 2024,
-                'Host_City': 'Paris',
-                'Host_NOC': 'FRA',
-                'Total_Medals': total_medals_france,
-                'Global_Total': total_medals_global_2024,
-                'Medal_Percentage': current_percentage,
-                'Avg_Percentage': avg_france,
-                'Lift': lift_score
-            }])
+    paris_row = pd.DataFrame([{
+        'Year': 2024,
+        'Host_City': 'Paris',
+        'Host_NOC': 'FRA',
+        'Total_Medals': total_medals_france,
+        'Global_Total': total_medals_global_2024,
+        'Medal_Percentage': current_percentage,
+        'Avg_Percentage': avg_france,
+        'Lift': lift_score
+    }])
 
-            host_advantage_df = pd.concat([host_advantage_df, paris_row], ignore_index=True)
-
+    host_advantage_df = pd.concat([host_advantage_df, paris_row], ignore_index=True)
     host_advantage_df = host_advantage_df.sort_values('Year')
+
+    # 9. Save Output
+    output_filename = 'host_advantage_data.csv'
+    host_advantage_df.to_csv(output_filename, index=False)
     return host_advantage_df
 
 
 country_names_to_change = {
     "Chinese Taipei": "Taiwan",
-    "Cֳ´te d'Ivoire": "Ivory Coast",
+    "Côte d'Ivoire": "Ivory Coast",
     "Democratic People's Republic of Korea": "North Korea",
     "Federated States of Micronesia": "Micronesia",
     "Hong Kong, China": "Hong Kong",
@@ -138,22 +139,21 @@ country_names_to_change = {
 }
 
 country_NOC_to_change = {
-    "AIN": "IOA",
-    "MAL": "MAS",
-    "NFL": "CAN",
-    "NBO": "MAS",
-    "YAR": "YAM",
-    "EOR": "IOA",
-    "ROC": "RUS",
-    "SAA": "GER",
-    "SCG": "SRB",
-    "VNM": "VIE",
-    "YMD": "YAM",
-    "EUN": "URS",
-    "UAR": "EGY",
-    "FRG": "GER",
+    "AIN": "IOA",  # Individual Neutral Athletes to Independent Olympic Athletes
+    "MAL": "MAS",  # Malaya to Malaysia
+    "NFL": "CAN",  # Newfoundland to Canada
+    "NBO": "MAS",  # North Borneo to Malaysia
+    "YAR": "YAM",  # North Yemen to Yemen
+    "EOR": "IOA",  # Refugee Olympic Team to Independent Olympic Athletes
+    "ROC": "RUS",  # ROC and Russian Olympic Committee ro Russia
+    "SAA": "GER",  # Saar to Germany
+    "SCG": "SRB",  # Serbia and Montenegro to Serbia
+    "VNM": "VIE",  # South Vietnam to Vietnam
+    "YMD": "YAM",  # South Yemen to Yemen
+    "EUN": "URS",  # Unified Team to Soviet Union
+    "UAR": "EGY",  # United Arab Republic to Egypt
+    "FRG": "GER",  # West Germany to Germany
 }
-
 
 @st.cache_data
 def get_processed_country_data():
@@ -162,7 +162,10 @@ def get_processed_country_data():
     countries['country'] = countries['country'].replace(country_names_to_change)
     countries['noc'] = countries['noc'].replace(country_NOC_to_change)
     countries = countries.drop_duplicates(subset=['noc'])
-    # Removed file saving logic here
+    # 1. Save to a temporary clean file
+    countries.to_csv('Olympics_Country_Cleaned.csv', index=False)
+    # 2. Rename it to overwrite the original
+    os.replace('Olympics_Country_Cleaned.csv', 'Olympics_Country.csv')
     return countries
 
 
@@ -178,17 +181,30 @@ def get_processed_main_data():
 
     countries = get_processed_country_data()
 
-    if 'NOC' in df.columns:
-        df.loc[df['NOC'] == 'LIB', 'NOC'] = 'LBN'
-        df.loc[df['NOC'] == 'ROT', 'NOC'] = 'IOA'
-        df['NOC'] = df['NOC'].replace(country_NOC_to_change)
+    df.loc[df['NOC'] == 'LIB', 'NOC'] = 'LBN'
+    df.loc[df['NOC'] == 'ROT', 'NOC'] = 'IOA'
+    df['NOC'] = df['NOC'].replace(country_NOC_to_change)
 
-        merged_df = df.merge(countries, left_on='NOC', right_on='noc', how='left')
-        merged_df['Team'] = merged_df['country'].fillna(merged_df['Team'])
-        df = merged_df.drop(columns=['noc', 'country'])
+    merged_df = df.merge(countries, left_on='NOC', right_on='noc', how='left')
+    merged_df['Team'] = merged_df['country'].fillna(merged_df['Team'])
+    df = merged_df.drop(columns=['noc', 'country'])
 
     return df
 
+
+def get_name_map():
+    # Uses your existing get_processed_country_data to ensure consistency
+    df = get_processed_country_data()
+    if df.empty: return {}
+    return dict(zip(df['noc'], df['country']))
+
+
+def get_continent_mapping():
+    # Loads the new continent data
+    df = load_raw_continent_data()
+    if df.empty: return {}
+    # Maps alpha-3 code to region
+    return dict(zip(df['alpha-3'], df['region']))
 
 @st.cache_data
 def get_processed_athletics_data():
@@ -236,60 +252,82 @@ def get_processed_athletics_data():
 
 @st.cache_data
 def get_processed_medals_data():
+
     df_medals = load_raw_tally_data()
+    df_paris_medals = load_raw_paris_data()
     countries = get_processed_country_data()
 
     if df_medals.empty: return pd.DataFrame()
     df_medals = df_medals[df_medals['edition'].str.contains('Summer', na=False)].copy()
     df_medals['country_noc'] = df_medals['country_noc'].replace(country_NOC_to_change)
+    merged_df = df_medals.merge(countries, left_on='country_noc', right_on='noc', how='left')
+    merged_df['country_x'] = merged_df['country_y'].fillna(merged_df['country_x'])
+    if 'edition_id' in merged_df.columns:
+        df_medals = merged_df.drop(columns=['country_y', 'noc', 'edition_id'])
+    else:
+        df_medals = merged_df.drop(columns=['country_y', 'noc'])
+    df_medals = df_medals.rename(columns={'country_x': 'country'})
 
-    if not countries.empty:
-        merged_df = df_medals.merge(countries, left_on='country_noc', right_on='noc', how='left')
+    if "2024 Summer Olympics" not in df_medals['edition'].values:
+        df_paris_medals['edition'] = '2024 Summer Olympics'
+        df_paris_medals['year'] = 2024
+        df_paris_medals = df_paris_medals.rename(columns={
+            'country_code': 'country_noc',
+            'Gold Medal': 'gold',
+            'Silver Medal': 'silver',
+            'Bronze Medal': 'bronze',
+            'Total': 'total'
+        })
+
+        df_paris_medals['country_noc'] = df_paris_medals['country_noc'].replace(country_NOC_to_change)
+        merged_df = df_paris_medals.merge(countries, left_on='country_noc', right_on='noc', how='left')
         merged_df['country_x'] = merged_df['country_y'].fillna(merged_df['country_x'])
-        df_medals = merged_df.drop(columns=['country_y'])
-        df_medals = df_medals.rename(columns={'country_x': 'country'})
+        df_paris_medals = merged_df.rename(columns={'country_x': 'country'})
 
-    return df_medals
+        columns_order = ['edition', 'year', 'country', 'country_noc', 'gold', 'silver', 'bronze', 'total']
+        df_paris_medals = df_paris_medals[columns_order]
+        updated_medals_df = pd.concat([df_medals, df_paris_medals], ignore_index=True)
+    else:
+        updated_medals_df = df_medals
+    # 7. Save the new file
+    updated_medals_df.to_csv('Olympic_Games_Medal_Tally_Updated.csv', index=False)
+    os.replace('Olympic_Games_Medal_Tally_Updated.csv', 'Olympic_Games_Medal_Tally.csv')
+
+    return updated_medals_df
 
 
 @st.cache_data
 def get_processed_gapminder_data():
+    # Merges Olympic performance with Gapminder socioeconomic data
     df_main = load_raw_main_data()
     df_medals = get_processed_medals_data()
     if df_main.empty or df_medals.empty: return pd.DataFrame()
 
-    df_medals = df_medals[['year', 'country_noc', 'total']].rename(
-        columns={'total': 'Medals', 'country_noc': 'NOC', 'year': 'Year'})
+    df_medals = df_medals[['year', 'country_noc', 'total']].rename(columns={'total': 'Medals', 'country_noc': 'NOC', 'year': 'Year'})
 
     if 'year' in df_main.columns: df_main.rename(columns={'year': 'Year'}, inplace=True)
-    delegation = df_main.groupby(['Year', 'NOC'])['player_id'].nunique().reset_index().rename(
-        columns={'player_id': 'Delegation_Size'})
+    delegation = df_main.groupby(['Year', 'NOC'])['player_id'].nunique().reset_index().rename(columns={'player_id': 'Delegation_Size'})
 
     stats = pd.merge(delegation, df_medals, on=['Year', 'NOC'], how='left').fillna({'Medals': 0})
+    NOC_TO_CONTINENT = get_continent_mapping()
     stats['Region'] = stats['NOC'].map(NOC_TO_CONTINENT).fillna('Western Europe')
 
     gapminder = load_gapminder_reference()
     years = range(1896, 2025)
-    all_combos = pd.MultiIndex.from_product([gapminder['country'].unique(), years], names=['country', 'year']).to_frame(
-        index=False)
+    all_combos = pd.MultiIndex.from_product([gapminder['country'].unique(), years], names=['country', 'year']).to_frame(index=False)
 
-    gap_full = pd.merge(all_combos,
-                        gapminder[['country', 'year', 'pop', 'gdpPercap', 'lifeExp', 'iso_alpha', 'continent']],
-                        on=['country', 'year'], how='left')
+    gap_full = pd.merge(all_combos, gapminder[['country', 'year', 'pop', 'gdpPercap', 'lifeExp', 'iso_alpha', 'continent']], on=['country', 'year'], how='left')
 
     for col in ['pop', 'gdpPercap', 'lifeExp']:
-        gap_full[col] = gap_full.groupby('country')[col].transform(
-            lambda x: x.interpolate(method='linear', limit_direction='both'))
+        gap_full[col] = gap_full.groupby('country')[col].transform(lambda x: x.interpolate(method='linear', limit_direction='both'))
 
     gap_full['iso_alpha'] = gap_full.groupby('country')['iso_alpha'].ffill().bfill()
     gap_full['continent'] = gap_full.groupby('country')['continent'].ffill().bfill()
 
-    noc_iso = {'GER': 'DEU', 'NED': 'NLD', 'GRE': 'GRC', 'DEN': 'DNK', 'SUI': 'CHE', 'RSA': 'ZAF', 'GBR': 'GBR',
-               'CHN': 'CHN', 'USA': 'USA'}
+    noc_iso = {'GER': 'DEU', 'NED': 'NLD', 'GRE': 'GRC', 'DEN': 'DNK', 'SUI': 'CHE', 'RSA': 'ZAF', 'GBR': 'GBR', 'CHN': 'CHN', 'USA': 'USA'}
     stats['ISO'] = stats['NOC'].map(noc_iso).fillna(stats['NOC'])
 
-    df = pd.merge(stats, gap_full.rename(columns={'year': 'Year'}), left_on=['ISO', 'Year'],
-                  right_on=['iso_alpha', 'Year'], how='left')
+    df = pd.merge(stats, gap_full.rename(columns={'year': 'Year'}), left_on=['ISO', 'Year'], right_on=['iso_alpha', 'Year'], how='left')
     df['Population'] = df['pop'].fillna(5000000)
     df['Medals_Per_Million'] = (df['Medals'] / (df['Population'] / 1000000))
     df.rename(columns={'lifeExp': 'Life_Expectancy'}, inplace=True)
