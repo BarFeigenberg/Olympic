@@ -68,6 +68,77 @@ def create_host_advantage_file():
 
         avg_Percentage.append(avg)
 
+    # Filter for Summer Olympics
+    games_summer = games_df[
+        (games_df['edition'].str.contains('Summer', case=False, na=False)) &
+        (games_df['year'] < 2024)].copy()
+
+    tally_summer = tally_df[
+        (tally_df['edition'].str.contains('Summer', case=False, na=False)) &
+        (tally_df['year'] < 2024)].copy()
+
+    # Extract Year, City, and Host Country Code (NOC)
+    hosts = games_summer[['year', 'city', 'country_noc']].rename(columns={
+        'year': 'Year',
+        'city': 'Host_City',
+        'country_noc': 'Host_NOC'
+    })
+
+    # Remove duplicates to ensure one entry per Olympic year
+    hosts = hosts.drop_duplicates(subset=['Year'])
+
+    # Calculate Global Totals - Sum of all medals awarded per year (denominator for percentage calculation)
+    global_totals = tally_summer.groupby('year')['total'].sum().reset_index()
+    global_totals.rename(columns={'total': 'Global_Total', 'year': 'Year'}, inplace=True)
+
+    # Get the medal count for the host country specifically in their hosting year
+    host_advantage_df = pd.merge(
+        hosts,
+        tally_summer[['year', 'country_noc', 'total']],
+        left_on=['Year', 'Host_NOC'],
+        right_on=['year', 'country_noc'],
+        how='left'
+    )
+
+    host_advantage_df = host_advantage_df[['Year', 'Host_City', 'Host_NOC', 'total']]
+    host_advantage_df.rename(columns={'total': 'Total_Medals'}, inplace=True)
+
+    # Handle cases where host won 0 medals (fill NaN with 0)
+    host_advantage_df['Total_Medals'] = host_advantage_df['Total_Medals'].fillna(0)
+
+    # Join with global totals to calculate market share
+    host_advantage_df = pd.merge(host_advantage_df, global_totals, on='Year', how='left')
+
+    # If Global_Total is NaN or 0, it means no medals were awarded worldwide.
+    # This indicates the Olympics were cancelled
+    host_advantage_df = host_advantage_df[host_advantage_df['Global_Total'] > 0].copy()
+
+    # Calculate 'Medal_Percentage': The host's share of total medals in the hosting year
+    host_advantage_df['Medal_Percentage'] = host_advantage_df['Total_Medals'] / host_advantage_df['Global_Total']
+
+    # Calculate medal share for ALL countries in ALL years to build a history DB
+    all_Percentage = pd.merge(tally_summer, global_totals, left_on='year', right_on='Year', how='inner')
+    all_Percentage['Calc_Percentage'] = all_Percentage['total'] / all_Percentage['Global_Total']
+
+    avg_Percentage = []
+
+    # Iterate through each host to calculate their specific historical average
+    for index, row in host_advantage_df.iterrows():
+        host_noc = row['Host_NOC']
+        host_year = row['Year']
+        country_history = all_Percentage[
+            (all_Percentage['country_noc'] == host_noc) &
+            (all_Percentage['year'] != host_year)
+        ]
+
+        # Calculate mean share if history exists, else 0
+        if not country_history.empty:
+            avg = country_history['Calc_Percentage'].mean()
+        else:
+            avg = 0
+
+        avg_Percentage.append(avg)
+
     host_advantage_df['Avg_Percentage'] = avg_Percentage
 
     host_advantage_df['Lift'] = host_advantage_df.apply(
@@ -96,11 +167,13 @@ def create_host_advantage_file():
     host_advantage_df = pd.concat([host_advantage_df, paris_row], ignore_index=True)
     host_advantage_df = host_advantage_df.sort_values('Year')
 
+    host_advantage_df.columns = host_advantage_df.columns.str.lower()
+
     # 9. Save Output
     output_filename = 'host_advantage_data.csv'
     host_advantage_df.to_csv(output_filename, index=False)
-    return host_advantage_df
 
+    return host_advantage_df
 
 country_names_to_change = {
     "Chinese Taipei": "Taiwan",
@@ -168,7 +241,6 @@ def get_processed_country_data():
     os.replace('Olympics_Country_Cleaned.csv', 'Olympics_Country.csv')
     return countries
 
-
 @st.cache_data
 def get_processed_main_data():
     df = load_raw_main_data()
@@ -188,16 +260,15 @@ def get_processed_main_data():
     merged_df = df.merge(countries, left_on='NOC', right_on='noc', how='left')
     merged_df['Team'] = merged_df['country'].fillna(merged_df['Team'])
     df = merged_df.drop(columns=['noc', 'country'])
+    df.columns = df.columns.str.lower()
 
     return df
-
 
 def get_name_map():
     # Uses your existing get_processed_country_data to ensure consistency
     df = get_processed_country_data()
     if df.empty: return {}
     return dict(zip(df['noc'], df['country']))
-
 
 def get_continent_mapping():
     # Loads the new continent data
@@ -213,7 +284,7 @@ def get_processed_athletics_data():
 
     df.drop(columns=['Extra'], inplace=True, errors='ignore')
     ref = get_name_map()
-    df['Country'] = df['Nationality'].map(ref).fillna(df['Nationality'])
+    df['country'] = df['Nationality'].map(ref).fillna(df['Nationality'])
 
     df['BaseEvent'] = df['Event'].apply(
         lambda e: 'Sprint Hurdles' if 'Hurdles' in str(e) and ('110M' in str(e) or '100M' in str(e)) else str(
@@ -247,8 +318,9 @@ def get_processed_athletics_data():
         return np.nan
 
     df['NumericResult'] = df.apply(parse_result, axis=1)
-    return df
+    df.columns = df.columns.str.lower()
 
+    return df
 
 @st.cache_data
 def get_processed_medals_data():
@@ -293,8 +365,9 @@ def get_processed_medals_data():
     updated_medals_df.to_csv('Olympic_Games_Medal_Tally_Updated.csv', index=False)
     os.replace('Olympic_Games_Medal_Tally_Updated.csv', 'Olympic_Games_Medal_Tally.csv')
 
-    return updated_medals_df
+    updated_medals_df.columns = updated_medals_df.columns.str.lower()
 
+    return updated_medals_df
 
 @st.cache_data
 def get_processed_gapminder_data():
@@ -334,5 +407,7 @@ def get_processed_gapminder_data():
 
     ref = get_name_map()
     df['Country_Name'] = stats['NOC'].map(ref).fillna(stats['NOC'])
+    df = df[df['Medals'] > 0].sort_values(['Year', 'Country_Name'])
+    df.columns = df.columns.str.lower()
 
-    return df[df['Medals'] > 0].sort_values(['Year', 'Country_Name'])
+    return df

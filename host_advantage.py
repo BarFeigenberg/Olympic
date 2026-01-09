@@ -3,18 +3,19 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-def show_host_advantage(host_data, data, country_ref):
+
+def show_host_advantage(host_data, medals_only, country_ref):
     # --- 1. PREPARE DATA FOR DROPDOWN (Must be done before layout) ---
     noc_map = {}
     if not country_ref.empty:
         noc_map = dict(zip(country_ref['noc'], country_ref['country']))
 
     def get_label(row):
-        full_name = noc_map.get(row['Host_NOC'], row['Host_NOC'])
-        return f"{row['Year']} - {row['Host_City']} ({full_name})"
+        full_name = noc_map.get(row['host_noc'], row['host_noc'])
+        return f"{row['year']} - {row['host_city']} ({full_name})"
 
-    host_data['Label'] = host_data.apply(get_label, axis=1)
-    options = sorted(host_data['Label'].unique(), reverse=True)
+    host_data['label'] = host_data.apply(get_label, axis=1)
+    options = sorted(host_data['label'].unique(), reverse=True)
 
     # --- 2. NEW LAYOUT: Title Left, Dropdown Right ---
     # Ratio [5, 2]: Title takes 5 parts, Dropdown takes 2 parts
@@ -32,30 +33,30 @@ def show_host_advantage(host_data, data, country_ref):
 
     st.divider()
 
-    # Filter dataset to include only rows with medals
-    medals_only = data[data['Medal'] != 'No medal']
-
     # Extract Selection Variables EARLY
     h_year = None
+    h_medals = None
+    h_noc = None
+    full_country_name = None
     if sel_event:
-        row = host_data[host_data['Label'] == sel_event].iloc[0]
-        h_year = int(row['Year'])
-        h_noc = row['Host_NOC']
-        h_medals = int(row['Total_Medals'])
+        row = host_data[host_data['label'] == sel_event].iloc[0]
+        h_year = int(row['year'])
+        h_noc = row['host_noc']
+        h_medals = int(row['total_medals'])
         full_country_name = noc_map.get(h_noc, h_noc)
 
     # --- 3. THE GLOBAL "BIG QUESTION" CHART ---
     st.subheader("🌍 The Big Picture: Does Hosting Pay Off?")
 
     # Calculate 'Lift %'
-    host_data['Lift_Percent'] = (host_data['Lift'] - 1) * 100
+    host_data['lift_percent'] = (host_data['lift'] - 1) * 100
 
     # FIX: Force 1896 to 0%
-    host_data.loc[host_data['Year'] == 1896, 'Lift_Percent'] = 0
-    host_data['Color'] = host_data['Lift_Percent'].apply(lambda x: '#2ECC71' if x >= 0 else '#E74C3C')
+    host_data.loc[host_data['year'] == 1896, 'lift_percent'] = 0
+    host_data['color'] = host_data['lift_percent'].apply(lambda x: '#2ECC71' if x >= 0 else '#E74C3C')
 
     # Sort Data
-    global_chart_data = host_data.sort_values('Year').reset_index(drop=True)
+    global_chart_data = host_data.sort_values('year').reset_index(drop=True)
 
     # --- TIMELINE SLIDER LOGIC ---
 
@@ -63,7 +64,7 @@ def show_host_advantage(host_data, data, country_ref):
     chart_place = st.empty()
 
     # 2. Render GREY LINE SLIDER (CSS applied above)
-    all_years = sorted(global_chart_data['Year'].unique())
+    all_years = sorted(global_chart_data['year'].unique())
 
     # Determine default value (center on selection or middle of history)
     default_year_val = all_years[len(all_years) // 2]
@@ -79,7 +80,7 @@ def show_host_advantage(host_data, data, country_ref):
 
     # 3. Calculate Window
     try:
-        center_idx = global_chart_data[global_chart_data['Year'] == center_year].index[0]
+        center_idx = global_chart_data[global_chart_data['year'] == center_year].index[0]
     except IndexError:
         center_idx = 0
 
@@ -103,10 +104,10 @@ def show_host_advantage(host_data, data, country_ref):
     # 4. Generate Chart
     fig_global = go.Figure()
     fig_global.add_trace(go.Bar(
-        x=filtered_global_data['Year'],
-        y=filtered_global_data['Lift_Percent'],
-        marker_color=filtered_global_data['Color'],
-        text=filtered_global_data['Host_NOC'],
+        x=filtered_global_data['year'],
+        y=filtered_global_data['lift_percent'],
+        marker_color=filtered_global_data['color'],
+        text=filtered_global_data['host_noc'],
         hovertemplate="<b>%{text} (%{x})</b><br>Impact: %{y:.1f}%<extra></extra>"
     ))
 
@@ -120,7 +121,7 @@ def show_host_advantage(host_data, data, country_ref):
     )
 
     # 5. Place Chart in placeholder (ABOVE slider)
-    chart_place.plotly_chart(fig_global, use_container_width=True)
+    chart_place.plotly_chart(fig_global, width='stretch')
     st.caption("Tip: Drag the grey slider above to scroll through the Olympic history.")
 
     st.divider()
@@ -128,12 +129,11 @@ def show_host_advantage(host_data, data, country_ref):
     # --- 4. DRILL DOWN (DEEP DIVE) ---
     if sel_event:
         st.subheader(f"🔍 Country Deep Dive: {full_country_name}")
-
-        country_history = medals_only[medals_only['NOC'] == h_noc].groupby('Year')['Medal'].count().reset_index()
+        country_history = medals_only[medals_only['noc'] == h_noc].groupby('year')['medal'].count().reset_index()
 
         # KPI Calculations
-        pre_years = country_history[(country_history['Year'] < h_year) & (country_history['Year'] >= h_year - 12)]
-        avg_pre = pre_years['Medal'].mean() if not pre_years.empty else 0
+        pre_years = country_history[(country_history['year'] < h_year) & (country_history['year'] >= h_year - 12)]
+        avg_pre = pre_years['medal'].mean() if not pre_years.empty else 0
 
         diff = h_medals - avg_pre
         boost_pct = (diff / avg_pre * 100) if avg_pre > 0 else 0
@@ -157,25 +157,25 @@ def show_host_advantage(host_data, data, country_ref):
         all_years_timeline = list(range(start_window, end_window + 4, 4))
 
         window_df = country_history[
-            (country_history['Year'] >= start_window) & (country_history['Year'] <= end_window)].copy()
-        window_df['Prev_Medals'] = window_df['Medal'].shift(1)
-        window_df['Year_Boost'] = (
-                (window_df['Medal'] - window_df['Prev_Medals']) / window_df['Prev_Medals'] * 100).fillna(0)
+            (country_history['year'] >= start_window) & (country_history['year'] <= end_window)].copy()
+        window_df['prev_medals'] = window_df['medal'].shift(1)
+        window_df['year_boost'] = (
+                (window_df['medal'] - window_df['prev_medals']) / window_df['prev_medals'] * 100).fillna(0)
 
-        window_df['Tooltip_Title'] = window_df['Year'].apply(
+        window_df['tooltip_title'] = window_df['year'].apply(
             lambda y: f"HOST YEAR: {y}" if y == h_year else f"Year: {y}")
 
-        fig_trend = px.line(window_df, x='Year', y='Medal', markers=True)
+        fig_trend = px.line(window_df, x='year', y='medal', markers=True)
 
         fig_trend.update_traces(
             line_color='#1E90FF',
             marker_color='#1E90FF',
             marker_size=8,
             hovertemplate="<b>%{customdata[1]}</b><br>Medals: %{y}<br>Change: %{customdata[0]:.1f}%<extra></extra>",
-            customdata=window_df[['Year_Boost', 'Tooltip_Title']]
+            customdata=window_df[['year_boost', 'tooltip_title']]
         )
 
-        max_medals = window_df['Medal'].max() if not window_df.empty else 10
+        max_medals = window_df['medal'].max() if not window_df.empty else 10
         if max_medals <= 15:
             y_dtick = 1
         elif max_medals <= 40:
@@ -201,34 +201,34 @@ def show_host_advantage(host_data, data, country_ref):
             hovermode="closest"
         )
         fig_trend.update_yaxes(showgrid=True, gridwidth=1, gridcolor='lightgray')
-        st.plotly_chart(fig_trend, use_container_width=True)
+        st.plotly_chart(fig_trend, width='stretch')
 
         st.divider()
 
         # --- Sports Breakdown ---
         st.subheader(f"🏆 Where did {full_country_name} win the extra medals?")
 
-        host_year_sports = medals_only[(medals_only['NOC'] == h_noc) & (medals_only['Year'] == h_year)]
-        sport_counts = host_year_sports['Sport'].value_counts().reset_index()
-        sport_counts.columns = ['Sport', 'Count']
+        host_year_sports = medals_only[(medals_only['noc'] == h_noc) & (medals_only['year'] == h_year)]
+        sport_counts = host_year_sports['sport'].value_counts().reset_index()
+        sport_counts.columns = ['sport', 'count']
 
         prev_year = h_year - 4
-        prev_year_sports = medals_only[(medals_only['NOC'] == h_noc) & (medals_only['Year'] == prev_year)]
-        prev_counts = prev_year_sports['Sport'].value_counts().reset_index()
-        prev_counts.columns = ['Sport', 'Prev_Count']
+        prev_year_sports = medals_only[(medals_only['noc'] == h_noc) & (medals_only['year'] == prev_year)]
+        prev_counts = prev_year_sports['sport'].value_counts().reset_index()
+        prev_counts.columns = ['sport', 'prev_count']
 
-        sport_comp = pd.merge(sport_counts, prev_counts, on='Sport', how='outer').fillna(0)
-        sport_comp = sport_comp[sport_comp['Count'] > sport_comp['Prev_Count']]
-        sport_comp = sport_comp.sort_values('Count', ascending=False).head(10)
+        sport_comp = pd.merge(sport_counts, prev_counts, on='sport', how='outer').fillna(0)
+        sport_comp = sport_comp[sport_comp['count'] > sport_comp['prev_count']]
+        sport_comp = sport_comp.sort_values('count', ascending=False).head(10)
 
         if not sport_comp.empty:
             fig_sports = go.Figure()
             fig_sports.add_trace(go.Bar(
-                y=sport_comp['Sport'], x=sport_comp['Prev_Count'],
+                y=sport_comp['sport'], x=sport_comp['prev_count'],
                 name=f"{prev_year}", orientation='h', marker_color='#9B59B6'
             ))
             fig_sports.add_trace(go.Bar(
-                y=sport_comp['Sport'], x=sport_comp['Count'],
+                y=sport_comp['sport'], x=sport_comp['count'],
                 name=f"{h_year} (Host)", orientation='h', marker_color='#00BFFF'
             ))
 
@@ -238,7 +238,7 @@ def show_host_advantage(host_data, data, country_ref):
                 plot_bgcolor='white'
             )
             fig_sports.update_xaxes(showgrid=True, gridwidth=1, gridcolor='lightgray')
-            st.plotly_chart(fig_sports, use_container_width=True)
+            st.plotly_chart(fig_sports, width='stretch')
         else:
             st.info(
                 f"No specific sports found where {full_country_name} improved medal count compared to the previous Olympics.")

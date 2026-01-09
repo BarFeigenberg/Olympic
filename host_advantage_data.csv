@@ -1,4 +1,4 @@
-Year,Host_City,Host_NOC,Total_Medals,Global_Total,Medal_Percentage,Avg_Percentage,Lift
+year,host_city,host_noc,total_medals,global_total,medal_percentage,avg_percentage,lift
 1896,Athina,GRE,47.0,122.0,0.38524590163934425,0.005377833807383537,71.63588824749809
 1900,Paris,FRA,112.0,284.0,0.39436619718309857,0.04471377674243419,8.819791704350438
 1904,St. Louis,USA,248.0,280.0,0.8857142857142857,0.16277552806122866,5.4413233749800565

@@ -7,7 +7,7 @@ def show_wellness_winning(gap_df):
     if gap_df is not None and not gap_df.empty:
 
         # --- DATA FILTERING ---
-        gap_df = gap_df[gap_df['Year'] >= 1920].copy()
+        gap_df = gap_df[gap_df['year'] >= 1920].copy()
 
         # --- LAYOUT ADJUSTMENT ---
         col_title, col_controls = st.columns([3, 2], gap="medium")
@@ -29,10 +29,10 @@ def show_wellness_winning(gap_df):
 
         if roi_mode == "Efficiency (Medals per Million)":
             fig = px.scatter(
-                gap_df, x="Life_Expectancy", y="Medals_Per_Million",
-                animation_frame="Year", animation_group="Country_Name",
-                size="Delegation_Size", color="continent",
-                hover_name="Country_Name", size_max=50,
+                gap_df, x="life_expectancy", y="medals_per_million",
+                animation_frame="year", animation_group="country_name",
+                size="delegation_size", color="continent",
+                hover_name="country_name", size_max=50,
                 range_x=[35, 90],
                 range_y=[-1.5, 7.5],
                 title="1. Health vs Talent (Medals Per Million)"
@@ -58,19 +58,20 @@ def show_wellness_winning(gap_df):
 
             # 3. Map real medal values to these positions
             def map_to_custom_scale(val):
-                if val < 1: return 0
+                if val < 1:
+                    return 0
                 return np.interp(val, custom_ticks, tick_positions)
 
-            gap_df['Y_Pos_Artificial'] = gap_df['Medals'].apply(map_to_custom_scale)
+            gap_df['y_pos_artificial'] = gap_df['medals'].apply(map_to_custom_scale)
 
             # Calculate dynamic range
             max_idx = len(custom_ticks) - 1
 
             fig = px.scatter(
-                gap_df, x="Life_Expectancy", y="Y_Pos_Artificial",
-                animation_frame="Year", animation_group="Country_Name",
-                size="Delegation_Size", color="continent",
-                hover_name="Country_Name", hover_data=["Medals"],
+                gap_df, x="life_expectancy", y="y_pos_artificial",
+                animation_frame="year", animation_group="country_name",
+                size="delegation_size", color="continent",
+                hover_name="country_name", hover_data=["medals"],
                 size_max=50, range_x=[35, 90],
 
                 # Dynamic range to fit all ticks comfortably
@@ -94,4 +95,4 @@ def show_wellness_winning(gap_df):
         # Slow down animation
         fig.layout.updatemenus[0].buttons[0].args[1]["frame"]["duration"] = 700
 
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')

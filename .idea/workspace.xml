@@ -6,8 +6,13 @@
   <component name="ChangeListManager">
     <list default="true" id="172acd16-f0d6-44df-912e-75fe004f01f9" name="Changes" comment="raz">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/athletics_deep_dive.py" beforeDir="false" afterPath="$PROJECT_DIR$/athletics_deep_dive.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_processor.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_processor.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/global_overview.py" beforeDir="false" afterPath="$PROJECT_DIR$/global_overview.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/host_advantage.py" beforeDir="false" afterPath="$PROJECT_DIR$/host_advantage.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/host_advantage_data.csv" beforeDir="false" afterPath="$PROJECT_DIR$/host_advantage_data.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/wellness_winning.py" beforeDir="false" afterPath="$PROJECT_DIR$/wellness_winning.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -44,7 +49,7 @@
     "Python.pre-processing.executor": "Run",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "main",
+    "git-widget-placeholder": "raz",
     "last_opened_file_path": "C:/Users/raz43/PycharmProjects/Olympic"
   }
 }]]></component>

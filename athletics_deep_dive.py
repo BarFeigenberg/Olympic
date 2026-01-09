@@ -1,8 +1,5 @@
 import streamlit as st
-import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
-import numpy as np
 import os
 import base64
 
@@ -24,7 +21,7 @@ def get_local_athlete_image_html(athlete_name):
 
             mime_type = "image/avif" if ext == ".avif" else f"image/{ext[1:]}"
             # Added max-height and object-fit to ensure the profile column stays aligned
-            return f'<img src="data:{mime_type};base64,{encoded_string}" style="width:100%; max-height:380px; object-fit: cover; border-radius: 10px; margin-bottom: 10px;">'
+            return f'<img src="data:{mime_type};base64,{encoded_string}"style="width:100%; max-height:380px; object-fit: cover; border-radius: 10px; margin-bottom: 10px;">'
     return None
 
 
@@ -34,8 +31,8 @@ def show_athletics_deep_dive(athletics_df):
         return
 
     # Data Cleaning
-    athletics_df['Gender'] = athletics_df['Gender'].astype(str).str.strip().str.upper()
-    events = sorted(athletics_df['BaseEvent'].unique().tolist())
+    athletics_df['gender'] = athletics_df['gender'].astype(str).str.strip().str.upper()
+    events = sorted(athletics_df['baseevent'].unique().tolist())
 
     # --- 1. SELECTION FILTERS (NEW LAYOUT: 4, 2, 1, 1) ---
     # Col 1: Title (Wide)
@@ -66,13 +63,13 @@ def show_athletics_deep_dive(athletics_df):
 
     # -------------------------------------------------------
 
-    vdf = athletics_df[athletics_df['BaseEvent'] == e_name].copy()
+    vdf = athletics_df[athletics_df['baseevent'] == e_name].copy()
     if mode == 'Men Only':
-        vdf = vdf[vdf['Gender'].isin(['M', 'MEN', 'MALE'])]
+        vdf = vdf[vdf['gender'].isin(['M', 'MEN', 'MALE'])]
     elif mode == 'Women Only':
-        vdf = vdf[vdf['Gender'].isin(['W', 'WOMEN', 'FEMALE'])]
+        vdf = vdf[vdf['gender'].isin(['W', 'WOMEN', 'FEMALE'])]
 
-    vdf = vdf.dropna(subset=['NumericResult'])
+    vdf = vdf.dropna(subset=['numericresult'])
 
     if vdf.empty:
         st.warning(f"No results found for {e_name}.")
@@ -80,24 +77,24 @@ def show_athletics_deep_dive(athletics_df):
         # --- 2. RECORD CALCULATIONS ---
         is_high = any(x in e_name for x in ['Throw', 'Jump', 'Vault', 'athlon'])
         unit_title = "Points" if "athlon" in e_name else ("Meters" if is_high else "Seconds")
-        if not is_high and vdf['NumericResult'].max() > 100:
+        if not is_high and vdf['numericresult'].max() > 100:
             unit_title = "Time"
 
         # Record progression logic (Cumulative Min/Max)
         if is_high:
-            yearly_best = vdf.groupby(['Year', 'Gender'])['NumericResult'].max().reset_index()
-            yearly_best['Running_Record'] = yearly_best.groupby('Gender')['NumericResult'].cummax()
+            yearly_best = vdf.groupby(['year', 'gender'])['numericresult'].max().reset_index()
+            yearly_best['running_record'] = yearly_best.groupby('gender')['numericresult'].cummax()
         else:
-            yearly_best = vdf.groupby(['Year', 'Gender'])['NumericResult'].min().reset_index()
-            yearly_best['Running_Record'] = yearly_best.groupby('Gender')['NumericResult'].cummin()
+            yearly_best = vdf.groupby(['year', 'gender'])['numericresult'].min().reset_index()
+            yearly_best['running_record'] = yearly_best.groupby('gender')['numericresult'].cummin()
 
-        yearly_best = yearly_best.sort_values('Year')
-        record_breaks = yearly_best[yearly_best['NumericResult'] == yearly_best['Running_Record']].copy()
-        record_breaks = record_breaks.drop_duplicates(subset=['Gender', 'NumericResult'], keep='first')
-        record_breaks = record_breaks.merge(vdf[['Year', 'Gender', 'NumericResult', 'Name']],
-                                            on=['Year', 'Gender', 'NumericResult'], how='left')
+        yearly_best = yearly_best.sort_values('year')
+        record_breaks = yearly_best[yearly_best['numericresult'] == yearly_best['running_record']].copy()
+        record_breaks = record_breaks.drop_duplicates(subset=['gender', 'numericresult'], keep='first')
+        record_breaks = record_breaks.merge(vdf[['year', 'gender', 'numericresult', 'name']],
+                                            on=['year', 'gender', 'numericresult'], how='left')
 
-        current_record_holder = record_breaks.sort_values('Year').groupby('Gender').tail(1)
+        current_record_holder = record_breaks.sort_values('year').groupby('gender').tail(1)
         historical_record_breaks = record_breaks.drop(current_record_holder.index)
 
         # --- 3. UPPER SECTION: TREND CHART & PROFILE ---
@@ -108,7 +105,7 @@ def show_athletics_deep_dive(athletics_df):
 
             # Applying Reference Design: DodgerBlue line color (#1E90FF)
             fig_trend = px.line(
-                yearly_best, x='Year', y='NumericResult', color='Gender',
+                yearly_best, x='year', y='numericresult', color='gender',
                 color_discrete_map={'M': '#1E90FF', 'W': '#1E90FF'}  # Uniform blue lines per reference
             )
 
@@ -117,30 +114,30 @@ def show_athletics_deep_dive(athletics_df):
 
             # Add Historical Record Markers (DodgerBlue dots)
             fig_trend.add_scatter(
-                x=historical_record_breaks['Year'], y=historical_record_breaks['NumericResult'],
+                x=historical_record_breaks['year'], y=historical_record_breaks['numericresult'],
                 mode='markers',
                 marker=dict(size=8, color='#1E90FF', line=dict(width=1, color='white')),
-                customdata=historical_record_breaks['Name'],
+                customdata=historical_record_breaks['name'],
                 name='Past Record', showlegend=False
             )
 
             # Add Current Record Highlight (DarkOrange #FF8C00 - same as "Host Year" in reference)
             fig_trend.add_scatter(
-                x=current_record_holder['Year'], y=current_record_holder['NumericResult'],
+                x=current_record_holder['year'], y=current_record_holder['numericresult'],
                 mode='markers',
                 marker=dict(size=14, color='#FF8C00', line=dict(width=2, color='white')),
-                customdata=current_record_holder['Name'],
+                customdata=current_record_holder['name'],
                 name='Olympic Record'
             )
 
             # Create the X-Axis timeline (All Olympic Years)
-            min_year = int(vdf['Year'].min())
+            min_year = int(vdf['year'].min())
             max_year = 2024
             timeline_years = list(range(1896, max_year + 4, 4))
             timeline_years = [y for y in timeline_years if y >= min_year - 4]
 
             # Highlight Current Record Year in Orange on the X-axis
-            current_rec_years = current_record_holder['Year'].tolist()
+            current_rec_years = current_record_holder['year'].tolist()
             tick_text = []
             for y in timeline_years:
                 if y in current_rec_years:
@@ -168,7 +165,7 @@ def show_athletics_deep_dive(athletics_df):
             if not is_high:
                 fig_trend.update_yaxes(autorange="reversed")
 
-            selected_point = st.plotly_chart(fig_trend, use_container_width=True, on_select="rerun",
+            selected_point = st.plotly_chart(fig_trend, width='stretch', on_select="rerun",
                                              key="athlete_selector")
 
         with col_info:
@@ -198,26 +195,26 @@ def show_athletics_deep_dive(athletics_df):
         st.divider()
         st.subheader("Best Result per Country")
 
-        vdf['Has_Both'] = vdf['Country'].map(vdf.groupby('Country')['Gender'].nunique()) == 2
-        best_per_country = vdf.sort_values('NumericResult', ascending=not is_high).groupby(
-            ['Country', 'Gender']).first().reset_index()
+        vdf['has_both'] = vdf['country'].map(vdf.groupby('country')['gender'].nunique()) == 2
+        best_per_country = vdf.sort_values('numericresult', ascending=not is_high).groupby(
+            ['country', 'gender']).first().reset_index()
 
-        ranks = best_per_country.groupby('Country').agg(
-            {'NumericResult': 'max' if is_high else 'min', 'Has_Both': 'first'}).reset_index()
-        ranks = ranks.sort_values(['Has_Both', 'NumericResult'], ascending=[True, True if is_high else False])
+        ranks = best_per_country.groupby('country').agg(
+            {'numericresult': 'max' if is_high else 'min', 'has_both': 'first'}).reset_index()
+        ranks = ranks.sort_values(['has_both', 'numericresult'], ascending=[True, True if is_high else False])
 
         # Using DodgerBlue scatter markers
         fig_country = px.scatter(
-            best_per_country, x='NumericResult', y="Country", color="Gender",
+            best_per_country, x='numericresult', y="country", color="gender",
             color_discrete_map={'M': '#1E90FF', 'W': '#FF8C00' if mode == 'Both' else '#1E90FF'},
             height=max(500, len(best_per_country) * 20)
         )
 
         # Highlight Global Best in Orange
-        global_best = best_per_country['NumericResult'].max() if is_high else best_per_country['NumericResult'].min()
-        best_rows = best_per_country[best_per_country['NumericResult'] == global_best]
+        global_best = best_per_country['numericresult'].max() if is_high else best_per_country['numericresult'].min()
+        best_rows = best_per_country[best_per_country['numericresult'] == global_best]
         fig_country.add_scatter(
-            x=best_rows['NumericResult'], y=best_rows['Country'],
+            x=best_rows['numericresult'], y=best_rows['country'],
             mode='markers',
             marker=dict(color='#FF8C00', size=12, line=dict(width=1, color='white')),
             name='All-Time Best', showlegend=True
@@ -225,7 +222,7 @@ def show_athletics_deep_dive(athletics_df):
 
         fig_country.update_layout(
             plot_bgcolor='white',
-            yaxis=dict(categoryorder='array', categoryarray=ranks['Country'].tolist(), showgrid=True,
+            yaxis=dict(categoryorder='array', categoryarray=ranks['country'].tolist(), showgrid=True,
                        gridcolor='lightgray'),
             xaxis=dict(title=unit_title, showgrid=True, gridcolor='lightgray')
         )
@@ -233,4 +230,4 @@ def show_athletics_deep_dive(athletics_df):
         if not is_high:
             fig_country.update_xaxes(autorange="reversed")
 
-        st.plotly_chart(fig_country, use_container_width=True)
+        st.plotly_chart(fig_country, width='stretch')
