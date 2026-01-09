@@ -1,15 +1,43 @@
+import streamlit as st
+import plotly.express as px
 import plotly.graph_objects as go
-from data_processor import *
+import pandas as pd
+
+# Import the shared processing functions
+from data_processor import (
+    get_processed_country_data,
+    get_combined_population_data,
+    calculate_medals_per_million
+)
 
 
 def show_global_overview(medals_only, total_medals_per_country, country_list, medals_data):
     st.title("🏅 Global Olympic Insights")
     st.divider()
 
-    # ROW 1: CONTROLS
+    # --- 1. Data Preparation for Map & Global Stats ---
+    # Load the processed population data
+    pop_df = get_combined_population_data()
+
+    # For the static map, get LATEST known population per country
+    latest_pop = pop_df.sort_values('year').groupby('country').tail(1)[['country', 'population']]
+
+    # Prepare Map Data
+    map_df = total_medals_per_country.copy()
+
+    # Fix: Ensure 'medals' column exists for the calculator
+    if 'total' in map_df.columns and 'medals' not in map_df.columns:
+        map_df['medals'] = map_df['total']
+
+    # Merge total medals with latest population
+    map_df = map_df.merge(latest_pop, on='country', how='left')
+    map_df = calculate_medals_per_million(map_df)
+
+    # --- ROW 1: CONTROLS & METRICS ---
     col_select, col_metrics = st.columns([1, 3], gap="medium")
+
     with col_select:
-        if st.session_state.selected_country not in country_list:
+        if 'selected_country' not in st.session_state or st.session_state.selected_country not in country_list:
             st.session_state.selected_country = country_list[0] if country_list else "USA"
 
         selected_country = st.selectbox(
@@ -17,91 +45,71 @@ def show_global_overview(medals_only, total_medals_per_country, country_list, me
             country_list,
             index=country_list.index(st.session_state.selected_country)
         )
+
         if selected_country != st.session_state.selected_country:
             st.session_state.selected_country = selected_country
             st.rerun()
 
     with col_metrics:
+        # Prepare metrics data
         sport_medals_df = medals_only.groupby(['year', 'noc', 'sport']).size().reset_index(name='medal')
         country_df_update = sport_medals_df.merge(get_processed_country_data(), left_on='noc', right_on='noc',
                                                   how='left')
         country_df = country_df_update[country_df_update['country'] == st.session_state.selected_country]
-        total_row = total_medals_per_country[total_medals_per_country['country'] == st.session_state.selected_country]
-        total = int(total_row['total'].values[0])
+
+        country_stats = map_df[map_df['country'] == st.session_state.selected_country]
+
+        if not country_stats.empty:
+            total = int(country_stats['total'].values[0])
+            medals_p_m = country_stats.get('medals_per_million', pd.Series([0])).values[0]
+        else:
+            total = 0
+            medals_p_m = 0
+
         best_sport = country_df['sport'].mode()[0] if not country_df.empty else "N/A"
         best_year = country_df['year'].mode()[0] if not country_df.empty else "N/A"
 
-        m1, m2, m3 = st.columns(3)
+        m1, m2, m3, m4 = st.columns(4)
         m1.metric("🥇 Total Medals", total)
-        m2.metric("🏆 Best Sport", best_sport)
-        m3.metric("📅 Best Year", str(best_year))
+        m2.metric("👥 Medals / 1M", f"{medals_p_m:.2f}")
+        m3.metric("🏆 Best Sport", best_sport)
+        m4.metric("📅 Best Year", str(best_year))
 
     st.divider()
 
-    # --- Data Processing for Map (Normalization) ---
-    map_df = total_medals_per_country.copy()
+    # --- ROW 2: WORLD MAP ---
+    bins = [0, 0.2, 0.5, 1, 3, 7, 15, 30, 60, 2000]
+    bin_labels = ["0 – 0.2", "0.2 – 0.5", "0.5 – 1", "1 – 3", "3 – 7", "7 – 15", "15 – 30", "30 – 60", "60+"]
 
-    # Load population data (using Gapminder 2007 as reference)
-    gapminder = px.data.gapminder().query("year == 2007")
+    if 'medals_per_million' in map_df.columns:
+        map_df['bin_label'] = pd.cut(
+            map_df['medals_per_million'],
+            bins=bins,
+            labels=bin_labels,
+            include_lowest=True,
+            right=False
+        ).astype(str)
+        map_viz_df = map_df[map_df['bin_label'] != 'nan'].copy()
+    else:
+        map_viz_df = map_df.copy()
+        map_viz_df['bin_label'] = "0 – 0.2"
 
-    # Merge map data with population
-    map_df = map_df.merge(gapminder[['country', 'pop', 'iso_alpha']],
-                          left_on='country', right_on='country', how='left')
-
-    # Manual population fix for Russia (often missing in Gapminder subset)
-    map_df.loc[map_df['country'] == 'Russia', 'pop'] = 144_000_000
-
-    # Calculate Medals per 1 Million people
-    map_df['medals_per_million'] = (map_df['total'] / map_df['pop']) * 1_000_000
-
-    # --- 1. Fixed, meaningful bins (9 ranges) ---
-    bins = [0, 0.2, 0.5, 1, 3, 7, 15, 30, 60, 200]
-
-    bin_labels = [
-        "0 – 0.2",
-        "0.2 – 0.5",
-        "0.5 – 1",
-        "1 – 3",
-        "3 – 7",
-        "7 – 15",
-        "15 – 30",
-        "30 – 60",
-        "60+"
-    ]
-
-    map_df['bin_label'] = pd.cut(
-        map_df['medals_per_million'],
-        bins=bins,
-        labels=bin_labels,
-        include_lowest=True,
-        right=False
-    )
-    map_df['bin_label'] = map_df['bin_label'].astype(str)
-
-    # Use exactly 9 reds (light -> dark)
     discrete_reds = px.colors.sequential.Reds[1:10]
-    map_df = map_df[map_df['bin_label'] != 'nan']
 
-    # ROW 2: MAP
     fig_map = px.choropleth(
-        map_df,
+        map_viz_df,
         locations="country",
         locationmode="country names",
         color="bin_label",
         hover_name="country",
-        hover_data={
-            "bin_label": False,
-            "country": False,
-            "total": True,
-            "medals_per_million": ":.1f"
-        },
+        hover_data={"bin_label": False, "country": False, "total": True, "population": True,
+                    "medals_per_million": ":.2f"},
         color_discrete_sequence=discrete_reds,
         category_orders={"bin_label": bin_labels},
         projection="natural earth"
     )
 
-    # ... (Rest of the layout code remains the same)
-    sel_data = map_df[map_df['country'] == st.session_state.selected_country]
+    sel_data = map_viz_df[map_viz_df['country'] == st.session_state.selected_country]
     if not sel_data.empty:
         fig_map.add_trace(go.Choropleth(
             locations=sel_data['country'],
@@ -111,32 +119,72 @@ def show_global_overview(medals_only, total_medals_per_country, country_list, me
         ))
 
     fig_map.update_geos(showocean=True, oceancolor="#E0F7FA", showland=True, landcolor="#F5F5F5")
-    fig_map.update_layout(
-        margin={"r": 0, "t": 0, "l": 0, "b": 0},
-        height=500,
-        clickmode="event",
-        dragmode="pan",
-        legend_title_text="Medals per 1M People"
-    )
-    map_sel = st.plotly_chart(fig_map, width='stretch', on_select="rerun", key="world_map")
+    fig_map.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, height=500, clickmode="event", dragmode="pan",
+                          legend_title_text="Medals per 1M")
 
+    map_sel = st.plotly_chart(fig_map, width='stretch', on_select="rerun", key="world_map")
     if map_sel and map_sel["selection"]["points"]:
-        c = map_sel["selection"]["points"][0].get("customdata", [None])[0]
-        if c and c != st.session_state.selected_country:
-            st.session_state.selected_country = c
-            st.rerun()
+        point = map_sel["selection"]["points"][0]
+        if "location" in point:
+            c = point["location"]
+            if c and c != st.session_state.selected_country:
+                st.session_state.selected_country = c
+                st.rerun()
 
     st.divider()
 
-    # ROW 3: GRAPHS
+    # --- ROW 3: DETAILED GRAPHS ---
     c_trend, c_podium = st.columns(2, gap="large")
+
     with c_trend:
-        st.subheader("Medals Trend")
-        td = medals_data[medals_data['country'] == st.session_state.selected_country]
-        if not td.empty:
-            fig = px.line(td, x='year', y='total', markers=True, color_discrete_sequence=["#77DD77"])
-            fig.update_layout(height=400)
-            st.plotly_chart(fig, width='stretch')
+        t_col1, t_col2 = st.columns([2, 1])
+        with t_col1:
+            st.subheader("Medals Trend")
+        with t_col2:
+            trend_mode = st.radio("Metric:", ["Total", "Per Million"], horizontal=True, label_visibility="collapsed")
+
+        # 1. Filter raw data
+        raw_td = medals_data[medals_data['country'] == st.session_state.selected_country].copy()
+
+        if not raw_td.empty:
+            # 2. Aggregation Fix: Ensure strictly 1 row per year before merging population
+            # This prevents duplicates if 'medals_data' has multiple entries per year
+            if 'total' in raw_td.columns:
+                td_grouped = raw_td.groupby('year', as_index=False)['total'].sum()
+                td_grouped.rename(columns={'total': 'medals'}, inplace=True)
+            else:
+                td_grouped = pd.DataFrame(columns=['year', 'medals'])
+
+            # Add country column back for the merge
+            td_grouped['country'] = st.session_state.selected_country
+
+            # 3. Merge with population (Yearly basis)
+            country_pop = pop_df[pop_df['country'] == st.session_state.selected_country].copy()
+            td = td_grouped.merge(country_pop[['year', 'population']], on='year', how='left')
+
+            # 4. Calculate Medals per Million
+            td = calculate_medals_per_million(td)
+
+            # Plotting Logic
+            if trend_mode == "Total":
+                y_val = 'medals'
+                color_seq = ["#77DD77"]
+                y_title = "Total Medals"
+            else:
+                y_val = 'medals_per_million'
+                color_seq = ["#1E90FF"]
+                y_title = "Medals / Million"
+
+            if y_val in td.columns:
+                fig = px.line(td, x='year', y=y_val, markers=True,
+                              color_discrete_sequence=color_seq,
+                              hover_data={'medals': True, 'population': True, 'medals_per_million': ':.2f'})
+                fig.update_layout(height=400, yaxis_title=y_title)
+                st.plotly_chart(fig, width='stretch')
+            else:
+                st.error(f"Missing data for {y_val}")
+        else:
+            st.info(f"No medal history data for {st.session_state.selected_country}")
 
     with c_podium:
         st.subheader("🏆 Top 3 Sports Podium")
@@ -153,6 +201,5 @@ def show_global_overview(medals_only, total_medals_per_country, country_list, me
                                    textposition='auto'))
             fig.update_layout(height=400, yaxis_title="Count")
             st.plotly_chart(fig, width='stretch')
-
-
-
+        else:
+            st.info("No sufficient data for podium.")

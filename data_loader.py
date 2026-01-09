@@ -58,3 +58,27 @@ def load_raw_continent_data():
         return pd.read_csv("continent_data.csv")
     except FileNotFoundError:
         return pd.DataFrame()
+
+@st.cache_data
+def load_historical_population_data():
+    try:
+        # Expecting file from Our World in Data
+        return pd.read_csv('population.csv')
+    except FileNotFoundError:
+        return pd.DataFrame()
+
+@st.cache_data
+def load_2024_population_data():
+    try:
+        # Simple CSV with Country and Population columns
+        return pd.read_csv('population2024.xls.csv')
+    except FileNotFoundError:
+        return pd.DataFrame()
+
+@st.cache_data
+def load_life_expectancy_data():
+    try:
+        # Simple CSV with Country and Life Expectancy
+        return pd.read_csv('lex.csv')
+    except FileNotFoundError:
+        return pd.DataFrame()
