@@ -1,7 +1,5 @@
 import os
 import base64
-import numpy as np
-import plotly.graph_objects as go
 from data_loader import *
 
 
@@ -29,13 +27,14 @@ def get_local_athlete_image_html(athlete_name):
 def show_athletics_deep_dive(athletics_df):
     bio_df = load_athlete_bio_data()
     athletics_df = athletics_df.rename(columns={'numericresult': 'numeric_result'})
+    athletics_df = athletics_df.rename(columns={'baseevent': 'base_event'})
     if athletics_df is None or athletics_df.empty:
         st.error("⚠️ Data not found! Please check 'results.csv'.")
         return
 
     # Data Cleaning
     athletics_df['gender'] = athletics_df['gender'].astype(str).str.strip().str.upper()
-    events = sorted(athletics_df['baseevent'].unique().tolist())
+    events = sorted(athletics_df['base_event'].unique().tolist())
 
     # --- 1. SELECTION FILTERS (UPDATED LAYOUT) ---
     col_title, col_spacer, col_event = st.columns([5, 2, 2], gap="small")
@@ -53,7 +52,7 @@ def show_athletics_deep_dive(athletics_df):
         e_name = st.selectbox("Select Event:", events, index=default_idx)
 
         # Filter by Event ONLY (Keep both genders)
-        vdf = athletics_df[athletics_df['baseevent'] == e_name].copy()
+        vdf = athletics_df[athletics_df['base_event'] == e_name].copy()
 
         # Create a nice label for the legend
         vdf['gender_label'] = vdf['gender'].map({
@@ -89,106 +88,127 @@ def show_athletics_deep_dive(athletics_df):
         current_record_holder = record_breaks.sort_values('year').groupby('gender_label').tail(1)
         historical_record_breaks = record_breaks.drop(current_record_holder.index)
 
-        # --- 3. UPPER SECTION: TREND CHART & PROFILE ---
-        col_graph, col_info = st.columns([3, 1])
+        # --- 3. UPPER SECTION: TREND CHART (STRETCHED & CLEAN LAYOUT) ---
+        st.subheader(f"Record Progression: {e_name}")
 
-        with col_graph:
-            st.subheader(f"Record Progression: {e_name}")
+        # Colors
+        men_color = '#1E90FF'
+        women_color = '#FF69B4'
+        color_map = {'Men': men_color, 'Women': women_color}
+        record_fill = '#FFD700'
+        record_border = '#B8860B'
 
-            # Define Colors: Pink for Women, Blue for Men
-            color_map = {'Men': '#1E90FF', 'Women': '#FF69B4'}
+        # 1. Base Line Chart
+        fig_trend = px.line(
+            yearly_best,
+            x='year',
+            y='numeric_result',
+            color='gender_label',
+            color_discrete_map=color_map,
+            labels={'gender_label': 'Gender'}
+        )
+        fig_trend.update_traces(line_width=2, marker_size=0)
 
-            # Main Line Chart
-            fig_trend = px.line(
-                yearly_best,
-                x='year',
-                y='numeric_result',
-                color='gender_label',  # This creates the Legend automatically
-                color_discrete_map=color_map,
-                labels={'gender_label': 'Gender'}
-            )
+        # 2. Add Markers (Linked to Legend)
 
-            # Style the line and markers
-            fig_trend.update_traces(line_width=2, marker_size=8)
+        # --- MEN ---
+        men_hist = historical_record_breaks[historical_record_breaks['gender_label'] == 'Men']
+        men_curr = current_record_holder[current_record_holder['gender_label'] == 'Men']
 
-            # Add Historical Record Markers (DodgerBlue dots)
-            fig_trend.add_scatter(
-                x=historical_record_breaks['year'], y=historical_record_breaks['numeric_result'],
-                mode='markers',
-                marker=dict(size=8, color='#1E90FF', line=dict(width=1, color='white')),
-                customdata=historical_record_breaks['name'],
-                name='Past Record', showlegend=False
-            )
+        fig_trend.add_scatter(
+            x=men_hist['year'], y=men_hist['numeric_result'],
+            mode='markers',
+            marker=dict(size=9, color=men_color, line=dict(width=1, color='white')),
+            customdata=men_hist['name'],
+            name='Men', legendgroup='Men', showlegend=False
+        )
+        fig_trend.add_scatter(
+            x=men_curr['year'], y=men_curr['numeric_result'],
+            mode='markers',
+            marker=dict(size=15, color=record_fill, line=dict(width=2, color=record_border)),
+            customdata=men_curr['name'],
+            name='Men', legendgroup='Men', showlegend=False
+        )
 
-            # Add Current Record Highlight (DarkOrange #FF8C00 - same as "Host Year" in reference)
-            fig_trend.add_scatter(
-                x=current_record_holder['year'], y=current_record_holder['numeric_result'],
-                mode='markers',
-                marker=dict(size=14, color='#FF8C00', line=dict(width=2, color='white')),
-                customdata=current_record_holder['name'],
-                name='Olympic Record'
-            )
+        # --- WOMEN ---
+        women_hist = historical_record_breaks[historical_record_breaks['gender_label'] == 'Women']
+        women_curr = current_record_holder[current_record_holder['gender_label'] == 'Women']
 
-            # Create the X-Axis timeline (All Olympic Years)
-            min_year = int(vdf['year'].min())
-            max_year = 2024
-            timeline_years = list(range(1896, max_year + 4, 4))
-            timeline_years = [y for y in timeline_years if y >= min_year - 4]
+        fig_trend.add_scatter(
+            x=women_hist['year'], y=women_hist['numeric_result'],
+            mode='markers',
+            marker=dict(size=9, color=women_color, line=dict(width=1, color='white')),
+            customdata=women_hist['name'],
+            name='Women', legendgroup='Women', showlegend=False
+        )
+        fig_trend.add_scatter(
+            x=women_curr['year'], y=women_curr['numeric_result'],
+            mode='markers',
+            marker=dict(size=15, color=record_fill, line=dict(width=2, color=record_border)),
+            customdata=women_curr['name'],
+            name='Women', legendgroup='Women', showlegend=False
+        )
 
-            # Highlight Current Record Year in Orange on the X-axis
-            current_rec_years = current_record_holder['year'].tolist()
-            tick_text = []
-            for y in timeline_years:
-                if y in current_rec_years:
-                    tick_text.append(
-                        f'<span style="color:#FF8C00; font-weight:bold; font-size:12px">{y}<br>RECORD</span>')
-                else:
-                    tick_text.append(str(y))
+        # 3. Add Instruction Annotation (ABOVE the Legend)
+        # Positioned high up on the right (y=1.35) so it doesn't overlap the items
+        fig_trend.add_annotation(
+            text="💡 Click legend items to filter gender",
+            xref="paper", yref="paper",
+            x=1, y=1.35,
+            showarrow=False,
+            font=dict(size=11, color="gray"),
+            xanchor="right"
+        )
 
-            # Reference Chart Styling: White background and LightGray grids
-            fig_trend.update_layout(
-                height=500,  # Fixed height to align with profile column
-                plot_bgcolor='white',
-                xaxis=dict(
-                    tickmode='array', tickvals=timeline_years, ticktext=tick_text,
-                    gridcolor='white', showline=True, linecolor='lightgray'
-                ),
-                yaxis=dict(
-                    title=unit_title, showgrid=True, gridwidth=1, gridcolor='lightgray',
-                    rangemode="tozero" if is_high else "normal"
-                ),
-                hovermode="closest",
-                clickmode='event+select'
-            )
+        # 4. Smart X-Axis Formatting
+        min_year = int(vdf['year'].min())
+        max_year = 2024
+        timeline_years = [y for y in range(1896, max_year + 4, 4) if y >= min_year - 4]
 
-            if not is_high:
-                fig_trend.update_yaxes(autorange="reversed")
+        men_record_year = men_curr['year'].values[0] if not men_curr.empty else None
+        women_record_year = women_curr['year'].values[0] if not women_curr.empty else None
 
-            selected_point = st.plotly_chart(fig_trend, width='stretch', on_select="rerun",
-                                             key="athlete_selector")
+        tick_text = []
+        for y in timeline_years:
+            is_men_rec = (y == men_record_year)
+            is_women_rec = (y == women_record_year)
 
-        with col_info:
-            st.subheader("👤 Athlete Profile")
-            if selected_point and "selection" in selected_point and selected_point["selection"]["points"]:
-                point_data = selected_point["selection"]["points"][0]
-                athlete_name = point_data.get("customdata")
+            # Helper for "WORLD RECORD"
+            wr_label = '<br><span style="font-size:9px">WORLD RECORD</span>'
 
-                if athlete_name:
-                    st.write(f"**Name:** {athlete_name}")
-                    st.write(f"**Year:** {point_data['x']}")
-                    st.write(f"**Result:** {point_data['y']} {unit_title}")
-
-                    # Base64 Image Display (Bypasses AVIF identify errors)
-                    img_html = get_local_athlete_image_html(athlete_name)
-                    if img_html:
-                        st.markdown(img_html, unsafe_allow_html=True)
-                    else:
-                        st.image("https://cdn-icons-png.flaticon.com/512/847/847969.png", width=120)
-                        st.info("Photo not found in assets.")
-                else:
-                    st.info("Click a record point (dot) to see details.")
+            if is_men_rec and is_women_rec:
+                tick_text.append(f'<span style="color:purple; font-weight:900;">{y}{wr_label}</span>')
+            elif is_men_rec:
+                tick_text.append(f'<span style="color:{men_color}; font-weight:900;">{y}{wr_label}</span>')
+            elif is_women_rec:
+                tick_text.append(f'<span style="color:{women_color}; font-weight:900;">{y}{wr_label}</span>')
             else:
-                st.info("Click a marker on the graph to view the athlete's details.")
+                tick_text.append(str(y))
+
+        fig_trend.update_layout(
+            height=500,
+            plot_bgcolor='white',
+            # Margins: l=0 pushes it to the far left. t=100 gives room for the top legend + text.
+            margin=dict(l=0, r=0, t=100, b=0),
+            xaxis=dict(
+                tickmode='array', tickvals=timeline_years, ticktext=tick_text,
+                gridcolor='white', showline=True, linecolor='lightgray',
+                range=[min_year - 2, max_year + 2]  # Slight padding on sides
+            ),
+            yaxis=dict(
+                title=unit_title, showgrid=True, gridwidth=1, gridcolor='lightgray',
+                rangemode="tozero" if is_high else "normal",
+                automargin=True  # Ensures the Y-label doesn't get cut off despite l=0
+            ),
+            hovermode="closest",
+            # Legend position (Top Right, slightly below the instruction text)
+            legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="right", x=1)
+        )
+
+        if not is_high:
+            fig_trend.update_yaxes(autorange="reversed")
+
+        st.plotly_chart(fig_trend, use_container_width=True)
 
         # --- 4. LOWER SECTION: PHYSICAL ANALYSIS (GENDER SPECIFIC) ---
         st.divider()
