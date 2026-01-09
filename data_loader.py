@@ -58,3 +58,10 @@ def load_raw_continent_data():
         return pd.read_csv("continent_data.csv")
     except FileNotFoundError:
         return pd.DataFrame()
+
+@st.cache_data
+def load_athlete_bio_data():
+    try:
+        return pd.read_csv("Olympic_Athlete_Bio.csv")
+    except FileNotFoundError:
+        return pd.DataFrame()

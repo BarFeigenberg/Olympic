@@ -4,6 +4,27 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 
+def selection_dropdown(host_data, country_ref):
+    # --- CSS FOR SELECTBOX CARD ---
+    st.markdown("""
+        <style>
+            /* Target the Selectbox container */
+            [data-testid="stSelectbox"] {
+                background-color: white;
+                padding: 10px;           /* Inner spacing */
+                border-radius: 10px;     /* Rounded corners */
+                border: 1px solid #dedede; /* Thin grey border */
+                box-shadow: 2px 2px 5px rgba(0,0,0,0.1); /* Shadow */
+            }
+
+            /* Force the label text (title) to be dark grey */
+            [data-testid="stSelectbox"] label {
+                color: #444 !important;
+            }
+        </style>
+        """, unsafe_allow_html=True)
+
+
 def show_host_advantage(host_data, medals_only, country_ref):
     # --- 1. PREPARE DATA FOR DROPDOWN (Must be done before layout) ---
     noc_map = {}
@@ -137,6 +158,36 @@ def show_host_advantage(host_data, medals_only, country_ref):
 
         diff = h_medals - avg_pre
         boost_pct = (diff / avg_pre * 100) if avg_pre > 0 else 0
+
+        # --- CSS STYLING FOR METRICS ---
+        st.markdown("""
+                <style>
+                    /* Style the metric container */
+                    [data-testid="stMetric"] {
+                        background-color: white;
+                        border: 1px solid #dedede;
+                        padding: 10px;
+                        border-radius: 10px;
+                        color: black;
+                        box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+
+                        /* FORCE SAME HEIGHT */
+                        display: flex;       /* Use flexbox to center content vertically */
+                        flex-direction: column;
+                        justify-content: center; /* Center content vertically */
+                    }
+
+                    /* Force label color */
+                    [data-testid="stMetricLabel"] p {
+                        color: #444 !important;
+                    }
+
+                    /* Force value color */
+                    [data-testid="stMetricValue"] div {
+                        color: black !important;
+                    }
+                </style>
+                """, unsafe_allow_html=True)
 
         with st.container(border=True):
             k1, k2, k3, k4 = st.columns(4)
