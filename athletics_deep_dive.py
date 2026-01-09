@@ -29,19 +29,42 @@ def get_local_athlete_image_html(athlete_name):
 
 
 def show_athletics_deep_dive(athletics_df):
-    st.title("🏃 Athletics Analysis")
-
     if athletics_df is None or athletics_df.empty:
         st.error("⚠️ Data not found! Please check 'results.csv'.")
         return
 
     # Data Cleaning
     athletics_df['Gender'] = athletics_df['Gender'].astype(str).str.strip().str.upper()
-
-    # --- 1. SELECTION FILTERS ---
     events = sorted(athletics_df['BaseEvent'].unique().tolist())
-    e_name = st.selectbox("Select Event:", events, index=events.index('100M') if '100M' in events else 0)
-    mode = st.selectbox("Display:", ['Men Only', 'Women Only', 'Both'])
+
+    # --- 1. SELECTION FILTERS (NEW LAYOUT: 4, 2, 1, 1) ---
+    # Col 1: Title (Wide)
+    # Col 2: Spacer (Medium)
+    # Col 3: Event Button (Narrow)
+    # Col 4: Display Button (Narrow)
+    col_title, col_spacer, col_event, col_mode = st.columns([4, 2, 1, 1], gap="small")
+
+    with col_title:
+        st.title("🏃 Athletics Analysis")
+
+    with col_spacer:
+        st.empty()
+
+    with col_event:
+        # Spacers to push the widget down to align with title text
+        st.write("")
+        st.write("")
+        # Default index logic preserved from Raz's code
+        default_idx = events.index('100M') if '100M' in events else 0
+        e_name = st.selectbox("Select Event:", events, index=default_idx)
+
+    with col_mode:
+        # Spacers to push the widget down
+        st.write("")
+        st.write("")
+        mode = st.selectbox("Display:", ['Men Only', 'Women Only', 'Both'])
+
+    # -------------------------------------------------------
 
     vdf = athletics_df[athletics_df['BaseEvent'] == e_name].copy()
     if mode == 'Men Only':

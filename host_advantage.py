@@ -4,13 +4,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 def show_host_advantage(host_data, data, country_ref):
-    st.title("🏠 The Host Effect")
-    st.markdown("Does hosting the Olympics actually guarantee more medals?")
-    st.divider()
-
-    # Filter dataset to include only rows with medals
-    medals_only = data[data['Medal'] != 'No medal']
-    # --- 1. SELECTION DROPDOWN ---
+    # --- 1. PREPARE DATA FOR DROPDOWN (Must be done before layout) ---
     noc_map = {}
     if not country_ref.empty:
         noc_map = dict(zip(country_ref['noc'], country_ref['country']))
@@ -22,9 +16,24 @@ def show_host_advantage(host_data, data, country_ref):
     host_data['Label'] = host_data.apply(get_label, axis=1)
     options = sorted(host_data['Label'].unique(), reverse=True)
 
-    c_sel, c_blank = st.columns([1, 2])
+    # --- 2. NEW LAYOUT: Title Left, Dropdown Right ---
+    # Ratio [5, 2]: Title takes 5 parts, Dropdown takes 2 parts
+    c_title, c_sel = st.columns([5, 2], gap="large")
+
+    with c_title:
+        st.title("🏠 The Host Effect")
+        st.markdown("Does hosting the Olympics actually guarantee more medals?")
+
     with c_sel:
-        sel_event = st.selectbox("Select Host Event to Highlight:", options)
+        # Add spacers to push the dropdown down to align with the title text
+        st.write("")
+        st.write("")
+        sel_event = st.selectbox("Select Host Event:", options)
+
+    st.divider()
+
+    # Filter dataset to include only rows with medals
+    medals_only = data[data['Medal'] != 'No medal']
 
     # Extract Selection Variables EARLY
     h_year = None
@@ -35,7 +44,7 @@ def show_host_advantage(host_data, data, country_ref):
         h_medals = int(row['Total_Medals'])
         full_country_name = noc_map.get(h_noc, h_noc)
 
-    # --- 2. THE GLOBAL "BIG QUESTION" CHART ---
+    # --- 3. THE GLOBAL "BIG QUESTION" CHART ---
     st.subheader("🌍 The Big Picture: Does Hosting Pay Off?")
 
     # Calculate 'Lift %'
@@ -116,7 +125,7 @@ def show_host_advantage(host_data, data, country_ref):
 
     st.divider()
 
-    # --- 3. DRILL DOWN (DEEP DIVE) ---
+    # --- 4. DRILL DOWN (DEEP DIVE) ---
     if sel_event:
         st.subheader(f"🔍 Country Deep Dive: {full_country_name}")
 
