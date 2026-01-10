@@ -89,55 +89,71 @@ country_NOC_to_change = {
 }
 
 # --- Sport Categories for Radar Chart (5 balanced categories) ---
+# --- Sport Categories for Range Chart (11 balanced categories) ---
 SPORT_CATEGORIES = {
-    # 🏃 Track & Field (~3300 medals)
-    "Athletics": "Track & Field",
+    # 🏃 Athletics
+    "Athletics": "🏃 Athletics", 
     
-    # 🏊 Swimming & Diving (~2500 medals)
-    "Swimming": "Swimming & Diving", "Diving": "Swimming & Diving", 
-    "Water Polo": "Swimming & Diving", "Artistic Swimming": "Swimming & Diving", 
-    "Synchronized Swimming": "Swimming & Diving", "Marathon Swimming": "Swimming & Diving", 
-    "Marathon Swimming, Swimming": "Swimming & Diving",
+    # 🏊 Aquatics
+    "Swimming": "🏊 Aquatics", "Diving": "🏊 Aquatics", "Water Polo": "🏊 Aquatics",
+    "Artistic Swimming": "🏊 Aquatics", "Synchronized Swimming": "🏊 Aquatics",
+    "Marathon Swimming": "🏊 Aquatics", "Marathon Swimming, Swimming": "🏊 Aquatics",
     
-    # 🥊 Combat (~4000 medals)
-    "Wrestling": "Combat", "Boxing": "Combat", "Judo": "Combat",
-    "Fencing": "Combat", "Taekwondo": "Combat", "Karate": "Combat",
+    # 🤸 Gymnastics
+    "Gymnastics": "🤸 Gymnastics", "Artistic Gymnastics": "🤸 Gymnastics",
+    "Rhythmic Gymnastics": "🤸 Gymnastics", "Trampoline Gymnastics": "🤸 Gymnastics",
+    "Trampolining": "🤸 Gymnastics",
     
-    # 🎯 Endurance & Precision (~6000 medals) - Cycling, rowing, shooting, gymnastics
-    "Cycling": "Endurance & Precision", "Cycling BMX Freestyle": "Endurance & Precision",
-    "Cycling BMX Racing": "Endurance & Precision", "Cycling Mountain Bike": "Endurance & Precision",
-    "Cycling Road": "Endurance & Precision", "Cycling Road, Cycling Mountain Bike": "Endurance & Precision",
-    "Cycling Road, Cycling Track": "Endurance & Precision", "Cycling Road, Triathlon": "Endurance & Precision",
-    "Cycling Track": "Endurance & Precision", "Triathlon": "Endurance & Precision",
-    "Rowing": "Endurance & Precision", "Canoeing": "Endurance & Precision",
-    "Canoe Slalom": "Endurance & Precision", "Canoe Sprint": "Endurance & Precision",
-    "Sailing": "Endurance & Precision", "Shooting": "Endurance & Precision", 
-    "Archery": "Endurance & Precision", "Weightlifting": "Endurance & Precision",
-    "Gymnastics": "Endurance & Precision", "Artistic Gymnastics": "Endurance & Precision",
-    "Rhythmic Gymnastics": "Endurance & Precision", "Trampoline Gymnastics": "Endurance & Precision",
-    "Trampolining": "Endurance & Precision", "Modern Pentathlon": "Endurance & Precision",
+    # 🥋 Combat Sports
+    "Wrestling": "🥋 Combat Sports", "Boxing": "🥋 Combat Sports", "Judo": "🥋 Combat Sports",
+    "Fencing": "🥋 Combat Sports", "Taekwondo": "🥋 Combat Sports", "Karate": "🥋 Combat Sports",
     
-    # ⚽ Games (~2000 medals) - Ball and court sports
-    "Basketball": "Games", "3x3 Basketball": "Games",
-    "3x3 Basketball, Basketball": "Games", "Volleyball": "Games",
-    "Beach Volleyball": "Games", "Handball": "Games",
-    "Football": "Games", "Hockey": "Games", "Rugby": "Games",
-    "Rugby Sevens": "Games", "Baseball": "Games", "Softball": "Games",
-    "Baseball/Softball": "Games", "Cricket": "Games", "Lacrosse": "Games",
-    "Polo": "Games", "Tennis": "Games", "Badminton": "Games",
-    "Table Tennis": "Games", "Basque Pelota": "Games",
-    "Racquets": "Games", "Jeu De Paume": "Games", "Golf": "Games",
-    "Equestrian": "Games", "Equestrianism": "Games",
-    "Skateboarding": "Games", "Sport Climbing": "Games", 
-    "Surfing": "Games", "Breaking": "Games",
-    "Figure Skating": "Games", "Ice Hockey": "Games",
-    "Art Competitions": "Games", "Aeronautics": "Games", "Alpinism": "Games",
-    "Croquet": "Games", "Roque": "Games", "Tug-Of-War": "Games",
-    "Motorboating": "Games"
+    # ⚽ Ball Games (Team)
+    "Basketball": "⚽ Ball Games", "3x3 Basketball": "⚽ Ball Games",
+    "3x3 Basketball, Basketball": "⚽ Ball Games", "Volleyball": "⚽ Ball Games", 
+    "Beach Volleyball": "⚽ Ball Games", "Handball": "⚽ Ball Games",
+    "Football": "⚽ Ball Games", "Hockey": "⚽ Ball Games", "Rugby": "⚽ Ball Games", 
+    "Rugby Sevens": "⚽ Ball Games", "Baseball": "⚽ Ball Games", "Softball": "⚽ Ball Games",
+    "Baseball/Softball": "⚽ Ball Games", "Cricket": "⚽ Ball Games", "Lacrosse": "⚽ Ball Games",
+    "Polo": "⚽ Ball Games", "Ice Hockey": "⚽ Ball Games",
+    
+    # 🏸 Racquet Sports
+    "Tennis": "🏸 Racquet Sports", "Badminton": "🏸 Racquet Sports",
+    "Table Tennis": "🏸 Racquet Sports", "Basque Pelota": "🏸 Racquet Sports",
+    "Racquets": "🏸 Racquet Sports", "Jeu De Paume": "🏸 Racquet Sports",
+    
+    # 🚴 Cycling
+    "Cycling": "🚴 Cycling", "Cycling BMX Freestyle": "🚴 Cycling",
+    "Cycling BMX Racing": "🚴 Cycling", "Cycling Mountain Bike": "🚴 Cycling",
+    "Cycling Road": "🚴 Cycling", "Cycling Road, Cycling Mountain Bike": "🚴 Cycling",
+    "Cycling Road, Cycling Track": "🚴 Cycling", "Cycling Road, Triathlon": "🚴 Cycling",
+    "Cycling Track": "🚴 Cycling", "BMX": "🚴 Cycling",
+    
+    # 🚣 Water Sports (Non-Pool)
+    "Rowing": "🚣 Water Sports", "Canoeing": "🚣 Water Sports",
+    "Canoe Slalom": "🚣 Water Sports", "Canoe Sprint": "🚣 Water Sports",
+    "Sailing": "🚣 Water Sports", "Surfing": "🚣 Water Sports", "Motorboating": "🚣 Water Sports",
+    
+    # 🎯 Target Sports
+    "Shooting": "🎯 Target Sports", "Archery": "🎯 Target Sports", "Golf": "🎯 Target Sports",
+    
+    # 🏋️ Strength & Weight
+    "Weightlifting": "🏋️ Strength & Weight", "Tug-Of-War": "🏋️ Strength & Weight",
+    
+    # 🐎 Misc & Modern
+    "Triathlon": "🧗 Misc & Modern", "Modern Pentathlon": "🧗 Misc & Modern",
+    "Equestrian": "🧗 Misc & Modern", "Equestrianism": "🧗 Misc & Modern",
+    "Skateboarding": "🧗 Misc & Modern", "Sport Climbing": "🧗 Misc & Modern",
+    "Breaking": "🧗 Misc & Modern", "Figure Skating": "🧗 Misc & Modern",
+    "Art Competitions": "🧗 Misc & Modern", "Aeronautics": "🧗 Misc & Modern",
+    "Alpinism": "🧗 Misc & Modern", "Croquet": "🧗 Misc & Modern", "Roque": "🧗 Misc & Modern"
 }
 
-CATEGORY_ORDER = ["Track & Field", "Swimming & Diving", "Combat",
-                  "Endurance & Precision", "Games"]
+CATEGORY_ORDER = [
+    "🏃 Athletics", "🏊 Aquatics", "🤸 Gymnastics", "🥋 Combat Sports", 
+    "⚽ Ball Games", "🏸 Racquet Sports", "🚴 Cycling", "🚣 Water Sports",
+    "🎯 Target Sports", "🏋️ Strength & Weight", "🧗 Misc & Modern"
+]
 
 
 def get_sport_category(sport_name):
