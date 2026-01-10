@@ -82,3 +82,10 @@ def load_life_expectancy_data():
         return pd.read_csv('lex.csv')
     except FileNotFoundError:
         return pd.DataFrame()
+
+@st.cache_data
+def load_athlete_bio_data():
+    try:
+        return pd.read_csv("Olympic_Athlete_Bio.csv")
+    except FileNotFoundError:
+        return pd.DataFrame()

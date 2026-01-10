@@ -208,7 +208,7 @@ edition,year,country,country_noc,gold,silver,bronze,total
 1936 Summer Olympics,1936,Egypt,EGY,2,1,2,5
 1936 Summer Olympics,1936,Canada,CAN,1,3,5,9
 1936 Summer Olympics,1936,Norway,NOR,1,3,2,6
-1936 Summer Olympics,1936,Türkiye,TUR,1,0,1,2
+1936 Summer Olympics,1936,Turkey,TUR,1,0,1,2
 1936 Summer Olympics,1936,India,IND,1,0,0,1
 1936 Summer Olympics,1936,New Zealand,NZL,1,0,0,1
 1936 Summer Olympics,1936,Poland,POL,0,4,5,9
@@ -228,7 +228,7 @@ edition,year,country,country_noc,gold,silver,bronze,total
 1948 Summer Olympics,1948,Finland,FIN,10,8,6,24
 1948 Summer Olympics,1948,Hungary,HUN,10,5,13,28
 1948 Summer Olympics,1948,Italy,ITA,9,12,10,31
-1948 Summer Olympics,1948,Türkiye,TUR,6,4,2,12
+1948 Summer Olympics,1948,Turkey,TUR,6,4,2,12
 1948 Summer Olympics,1948,Czechoslovakia,TCH,6,2,3,11
 1948 Summer Olympics,1948,Switzerland,SUI,5,12,6,23
 1948 Summer Olympics,1948,Denmark,DEN,5,8,9,22
@@ -275,7 +275,7 @@ edition,year,country,country_noc,gold,silver,bronze,total
 1952 Summer Olympics,1952,Jamaica,JAM,2,3,0,5
 1952 Summer Olympics,1952,Belgium,BEL,2,2,0,4
 1952 Summer Olympics,1952,Denmark,DEN,2,1,3,6
-1952 Summer Olympics,1952,Türkiye,TUR,2,0,1,3
+1952 Summer Olympics,1952,Turkey,TUR,2,0,1,3
 1952 Summer Olympics,1952,Japan,JPN,1,6,2,9
 1952 Summer Olympics,1952,United Kingdom,GBR,1,2,8,11
 1952 Summer Olympics,1952,Argentina,ARG,1,2,2,5
@@ -314,7 +314,7 @@ edition,year,country,country_noc,gold,silver,bronze,total
 1956 Summer Olympics,1956,Germany,GER,4,10,6,20
 1956 Summer Olympics,1956,Japan,JPN,4,10,5,19
 1956 Summer Olympics,1956,France,FRA,4,4,6,14
-1956 Summer Olympics,1956,Türkiye,TUR,3,2,2,7
+1956 Summer Olympics,1956,Turkey,TUR,3,2,2,7
 1956 Summer Olympics,1956,Finland,FIN,3,1,11,15
 1956 Summer Olympics,1956,Iran,IRI,2,2,1,5
 1956 Summer Olympics,1956,Canada,CAN,2,1,2,5
@@ -338,14 +338,14 @@ edition,year,country,country_noc,gold,silver,bronze,total
 1956 Summer Olympics,1956,South Africa,RSA,0,0,4,4
 1956 Summer Olympics,1956,Austria,AUT,0,0,2,2
 1956 Summer Olympics,1956,Greece,GRE,0,0,1,1
-1956 Summer Olympics,1956,The Bahamas,BAH,0,0,1,1
+1956 Summer Olympics,1956,Bahamas,BAH,0,0,1,1
 1956 Summer Olympics,1956,Uruguay,URU,0,0,1,1
 1960 Summer Olympics,1960,Soviet Union,URS,43,29,31,103
 1960 Summer Olympics,1960,United States,USA,34,21,16,71
 1960 Summer Olympics,1960,Italy,ITA,13,10,13,36
 1960 Summer Olympics,1960,Germany,GER,12,19,11,42
 1960 Summer Olympics,1960,Australia,AUS,8,8,6,22
-1960 Summer Olympics,1960,Türkiye,TUR,7,2,0,9
+1960 Summer Olympics,1960,Turkey,TUR,7,2,0,9
 1960 Summer Olympics,1960,Hungary,HUN,6,8,7,21
 1960 Summer Olympics,1960,Japan,JPN,4,7,7,18
 1960 Summer Olympics,1960,Poland,POL,4,6,11,21
@@ -399,7 +399,7 @@ edition,year,country,country_noc,gold,silver,bronze,total
 1964 Summer Olympics,1964,New Zealand,NZL,3,0,2,5
 1964 Summer Olympics,1964,Romania,ROU,2,4,6,12
 1964 Summer Olympics,1964,Netherlands,NED,2,4,4,10
-1964 Summer Olympics,1964,Türkiye,TUR,2,3,1,6
+1964 Summer Olympics,1964,Turkey,TUR,2,3,1,6
 1964 Summer Olympics,1964,Sweden,SWE,2,2,4,8
 1964 Summer Olympics,1964,Denmark,DEN,2,1,3,6
 1964 Summer Olympics,1964,Yugoslavia,YUG,2,1,2,5
@@ -409,7 +409,7 @@ edition,year,country,country_noc,gold,silver,bronze,total
 1964 Summer Olympics,1964,Switzerland,SUI,1,2,1,4
 1964 Summer Olympics,1964,Ethiopia,ETH,1,0,0,1
 1964 Summer Olympics,1964,India,IND,1,0,0,1
-1964 Summer Olympics,1964,The Bahamas,BAH,1,0,0,1
+1964 Summer Olympics,1964,Bahamas,BAH,1,0,0,1
 1964 Summer Olympics,1964,South Korea,KOR,0,2,1,3
 1964 Summer Olympics,1964,Trinidad and Tobago,TTO,0,1,2,3
 1964 Summer Olympics,1964,Tunisia,TUN,0,1,1,2
@@ -445,7 +445,7 @@ edition,year,country,country_noc,gold,silver,bronze,total
 1968 Summer Olympics,1968,Bulgaria,BUL,2,4,3,9
 1968 Summer Olympics,1968,Iran,IRI,2,1,2,5
 1968 Summer Olympics,1968,Sweden,SWE,2,1,1,4
-1968 Summer Olympics,1968,Türkiye,TUR,2,0,0,2
+1968 Summer Olympics,1968,Turkey,TUR,2,0,0,2
 1968 Summer Olympics,1968,Denmark,DEN,1,4,3,8
 1968 Summer Olympics,1968,Canada,CAN,1,3,1,5
 1968 Summer Olympics,1968,Finland,FIN,1,2,1,4
@@ -508,7 +508,7 @@ edition,year,country,country_noc,gold,silver,bronze,total
 1972 Summer Olympics,1972,Pakistan,PAK,0,1,0,1
 1972 Summer Olympics,1972,South Korea,KOR,0,1,0,1
 1972 Summer Olympics,1972,Tunisia,TUN,0,1,0,1
-1972 Summer Olympics,1972,Türkiye,TUR,0,1,0,1
+1972 Summer Olympics,1972,Turkey,TUR,0,1,0,1
 1972 Summer Olympics,1972,Brazil,BRA,0,0,2,2
 1972 Summer Olympics,1972,Ethiopia,ETH,0,0,2,2
 1972 Summer Olympics,1972,Ghana,GHA,0,0,1,1
@@ -633,7 +633,7 @@ edition,year,country,country_noc,gold,silver,bronze,total
 1984 Summer Olympics,1984,Peru,PER,0,1,0,1
 1984 Summer Olympics,1984,Syria,SYR,0,1,0,1
 1984 Summer Olympics,1984,Thailand,THA,0,1,0,1
-1984 Summer Olympics,1984,Türkiye,TUR,0,0,3,3
+1984 Summer Olympics,1984,Turkey,TUR,0,0,3,3
 1984 Summer Olympics,1984,Venezuela,VEN,0,0,3,3
 1984 Summer Olympics,1984,Algeria,ALG,0,0,2,2
 1984 Summer Olympics,1984,Cameroon,CMR,0,0,1,1
@@ -667,7 +667,7 @@ edition,year,country,country_noc,gold,silver,bronze,total
 1988 Summer Olympics,1988,Brazil,BRA,1,2,3,6
 1988 Summer Olympics,1988,Finland,FIN,1,1,2,4
 1988 Summer Olympics,1988,Spain,ESP,1,1,2,4
-1988 Summer Olympics,1988,Türkiye,TUR,1,1,0,2
+1988 Summer Olympics,1988,Turkey,TUR,1,1,0,2
 1988 Summer Olympics,1988,Morocco,MAR,1,0,2,3
 1988 Summer Olympics,1988,Austria,AUT,1,0,0,1
 1988 Summer Olympics,1988,Portugal,POR,1,0,0,1
@@ -715,7 +715,7 @@ edition,year,country,country_noc,gold,silver,bronze,total
 1992 Summer Olympics,1992,Netherlands,NED,2,6,7,15
 1992 Summer Olympics,1992,Kenya,KEN,2,4,2,8
 1992 Summer Olympics,1992,Norway,NOR,2,4,1,7
-1992 Summer Olympics,1992,Türkiye,TUR,2,2,2,6
+1992 Summer Olympics,1992,Turkey,TUR,2,2,2,6
 1992 Summer Olympics,1992,Indonesia,INA,2,2,1,5
 1992 Summer Olympics,1992,Brazil,BRA,2,1,0,3
 1992 Summer Olympics,1992,Greece,GRE,2,0,0,2
@@ -756,7 +756,7 @@ edition,year,country,country_noc,gold,silver,bronze,total
 1992 Summer Olympics,1992,Qatar,QAT,0,0,1,1
 1992 Summer Olympics,1992,Suriname,SUR,0,0,1,1
 1992 Summer Olympics,1992,Thailand,THA,0,0,1,1
-1992 Summer Olympics,1992,The Bahamas,BAH,0,0,1,1
+1992 Summer Olympics,1992,Bahamas,BAH,0,0,1,1
 1996 Summer Olympics,1996,United States,USA,44,32,25,101
 1996 Summer Olympics,1996,Russia,RUS,26,21,16,63
 1996 Summer Olympics,1996,Germany,GER,20,18,27,65
@@ -773,10 +773,10 @@ edition,year,country,country_noc,gold,silver,bronze,total
 1996 Summer Olympics,1996,Romania,ROU,4,7,9,20
 1996 Summer Olympics,1996,Netherlands,NED,4,5,10,19
 1996 Summer Olympics,1996,Greece,GRE,4,4,0,8
-1996 Summer Olympics,1996,Czechia,CZE,4,3,4,11
+1996 Summer Olympics,1996,Czech Republic,CZE,4,3,4,11
 1996 Summer Olympics,1996,Switzerland,SUI,4,3,0,7
 1996 Summer Olympics,1996,Denmark,DEN,4,1,1,6
-1996 Summer Olympics,1996,Türkiye,TUR,4,1,1,6
+1996 Summer Olympics,1996,Turkey,TUR,4,1,1,6
 1996 Summer Olympics,1996,Canada,CAN,3,11,8,22
 1996 Summer Olympics,1996,Bulgaria,BUL,3,7,5,15
 1996 Summer Olympics,1996,Japan,JPN,3,6,5,14
@@ -821,7 +821,7 @@ edition,year,country,country_noc,gold,silver,bronze,total
 1996 Summer Olympics,1996,Taiwan,TPE,0,1,0,1
 1996 Summer Olympics,1996,Latvia,LAT,0,1,0,1
 1996 Summer Olympics,1996,Philippines,PHI,0,1,0,1
-1996 Summer Olympics,1996,The Bahamas,BAH,0,1,0,1
+1996 Summer Olympics,1996,Bahamas,BAH,0,1,0,1
 1996 Summer Olympics,1996,Tonga,TGA,0,1,0,1
 1996 Summer Olympics,1996,Zambia,ZAM,0,1,0,1
 1996 Summer Olympics,1996,Georgia,GEO,0,0,2,2
@@ -861,16 +861,16 @@ edition,year,country,country_noc,gold,silver,bronze,total
 2000 Summer Olympics,2000,Belarus,BLR,3,3,11,17
 2000 Summer Olympics,2000,Canada,CAN,3,3,8,14
 2000 Summer Olympics,2000,Spain,ESP,3,3,5,11
-2000 Summer Olympics,2000,Türkiye,TUR,3,0,2,5
+2000 Summer Olympics,2000,Turkey,TUR,3,0,2,5
 2000 Summer Olympics,2000,Iran,IRI,3,0,1,4
-2000 Summer Olympics,2000,Czechia,CZE,2,3,3,8
+2000 Summer Olympics,2000,Czech Republic,CZE,2,3,3,8
 2000 Summer Olympics,2000,Kenya,KEN,2,3,2,7
 2000 Summer Olympics,2000,Denmark,DEN,2,3,1,6
 2000 Summer Olympics,2000,Finland,FIN,2,1,1,4
 2000 Summer Olympics,2000,Austria,AUT,2,1,0,3
 2000 Summer Olympics,2000,Lithuania,LTU,2,0,3,5
 2000 Summer Olympics,2000,Azerbaijan,AZE,2,0,1,3
-2000 Summer Olympics,2000,The Bahamas,BAH,2,0,1,3
+2000 Summer Olympics,2000,Bahamas,BAH,2,0,1,3
 2000 Summer Olympics,2000,Slovenia,SLO,2,0,0,2
 2000 Summer Olympics,2000,Switzerland,SUI,1,6,2,9
 2000 Summer Olympics,2000,Indonesia,INA,1,3,2,6
@@ -914,7 +914,7 @@ edition,year,country,country_noc,gold,silver,bronze,total
 2000 Summer Olympics,2000,Israel,ISR,0,0,1,1
 2000 Summer Olympics,2000,Kuwait,KUW,0,0,1,1
 2000 Summer Olympics,2000,Kyrgyzstan,KGZ,0,0,1,1
-2000 Summer Olympics,2000,North Macedonia,MKD,0,0,1,1
+2000 Summer Olympics,2000,Macedonia,MKD,0,0,1,1
 2000 Summer Olympics,2000,Qatar,QAT,0,0,1,1
 2004 Summer Olympics,2004,United States,USA,36,39,26,101
 2004 Summer Olympics,2004,China,CHN,32,17,14,63
@@ -937,7 +937,7 @@ edition,year,country,country_noc,gold,silver,bronze,total
 2004 Summer Olympics,2004,Sweden,SWE,4,2,1,7
 2004 Summer Olympics,2004,Spain,ESP,3,11,6,20
 2004 Summer Olympics,2004,Canada,CAN,3,6,3,12
-2004 Summer Olympics,2004,Türkiye,TUR,3,3,4,10
+2004 Summer Olympics,2004,Turkey,TUR,3,3,4,10
 2004 Summer Olympics,2004,Poland,POL,3,2,5,10
 2004 Summer Olympics,2004,New Zealand,NZL,3,2,0,5
 2004 Summer Olympics,2004,Thailand,THA,3,1,4,8
@@ -957,7 +957,7 @@ edition,year,country,country_noc,gold,silver,bronze,total
 2004 Summer Olympics,2004,Chile,CHI,2,0,1,3
 2004 Summer Olympics,2004,Kazakhstan,KAZ,1,4,3,8
 2004 Summer Olympics,2004,Kenya,KEN,1,4,2,7
-2004 Summer Olympics,2004,Czechia,CZE,1,3,5,9
+2004 Summer Olympics,2004,Czech Republic,CZE,1,3,5,9
 2004 Summer Olympics,2004,South Africa,RSA,1,3,2,6
 2004 Summer Olympics,2004,Croatia,CRO,1,2,2,5
 2004 Summer Olympics,2004,Lithuania,LTU,1,2,0,3
@@ -968,7 +968,7 @@ edition,year,country,country_noc,gold,silver,bronze,total
 2004 Summer Olympics,2004,Azerbaijan,AZE,1,0,4,5
 2004 Summer Olympics,2004,Belgium,BEL,1,0,2,3
 2004 Summer Olympics,2004,Israel,ISR,1,0,1,2
-2004 Summer Olympics,2004,The Bahamas,BAH,1,0,1,2
+2004 Summer Olympics,2004,Bahamas,BAH,1,0,1,2
 2004 Summer Olympics,2004,Cameroon,CMR,1,0,0,1
 2004 Summer Olympics,2004,Dominican Republic,DOM,1,0,0,1
 2004 Summer Olympics,2004,United Arab Emirates,UAE,1,0,0,1
@@ -1014,7 +1014,7 @@ edition,year,country,country_noc,gold,silver,bronze,total
 2008 Summer Olympics,2008,Norway,NOR,3,5,1,9
 2008 Summer Olympics,2008,Brazil,BRA,3,4,10,17
 2008 Summer Olympics,2008,Belarus,BLR,3,4,7,14
-2008 Summer Olympics,2008,Czechia,CZE,3,3,1,7
+2008 Summer Olympics,2008,Czech Republic,CZE,3,3,1,7
 2008 Summer Olympics,2008,Slovakia,SVK,3,3,0,6
 2008 Summer Olympics,2008,New Zealand,NZL,3,2,4,9
 2008 Summer Olympics,2008,Georgia,GEO,3,2,2,7
@@ -1032,7 +1032,7 @@ edition,year,country,country_noc,gold,silver,bronze,total
 2008 Summer Olympics,2008,Azerbaijan,AZE,1,1,4,6
 2008 Summer Olympics,2008,Indonesia,INA,1,1,4,6
 2008 Summer Olympics,2008,Bulgaria,BUL,1,1,3,5
-2008 Summer Olympics,2008,Türkiye,TUR,1,1,3,5
+2008 Summer Olympics,2008,Turkey,TUR,1,1,3,5
 2008 Summer Olympics,2008,Taiwan,TPE,1,1,2,4
 2008 Summer Olympics,2008,Finland,FIN,1,1,2,4
 2008 Summer Olympics,2008,Latvia,LAT,1,1,1,3
@@ -1060,7 +1060,7 @@ edition,year,country,country_noc,gold,silver,bronze,total
 2008 Summer Olympics,2008,Algeria,ALG,0,1,1,2
 2008 Summer Olympics,2008,Morocco,MAR,0,1,1,2
 2008 Summer Olympics,2008,Tajikistan,TJK,0,1,1,2
-2008 Summer Olympics,2008,The Bahamas,BAH,0,1,1,2
+2008 Summer Olympics,2008,Bahamas,BAH,0,1,1,2
 2008 Summer Olympics,2008,Chile,CHI,0,1,0,1
 2008 Summer Olympics,2008,Ecuador,ECU,0,1,0,1
 2008 Summer Olympics,2008,Iceland,ISL,0,1,0,1
@@ -1095,7 +1095,7 @@ edition,year,country,country_noc,gold,silver,bronze,total
 2012 Summer Olympics,2012,Cuba,CUB,5,3,7,15
 2012 Summer Olympics,2012,Spain,ESP,4,10,6,20
 2012 Summer Olympics,2012,Jamaica,JAM,4,5,4,13
-2012 Summer Olympics,2012,Czechia,CZE,4,4,3,11
+2012 Summer Olympics,2012,Czech Republic,CZE,4,4,3,11
 2012 Summer Olympics,2012,South Africa,RSA,4,1,1,6
 2012 Summer Olympics,2012,North Korea,PRK,4,0,3,7
 2012 Summer Olympics,2012,Brazil,BRA,3,5,9,17
@@ -1122,14 +1122,14 @@ edition,year,country,country_noc,gold,silver,bronze,total
 2012 Summer Olympics,2012,Serbia,SRB,1,1,2,4
 2012 Summer Olympics,2012,Slovenia,SLO,1,1,2,4
 2012 Summer Olympics,2012,Trinidad and Tobago,TTO,1,1,2,4
-2012 Summer Olympics,2012,Türkiye,TUR,1,1,1,3
+2012 Summer Olympics,2012,Turkey,TUR,1,1,1,3
 2012 Summer Olympics,2012,Dominican Republic,DOM,1,1,0,2
 2012 Summer Olympics,2012,Taiwan,TPE,1,0,1,2
 2012 Summer Olympics,2012,Latvia,LAT,1,0,1,2
 2012 Summer Olympics,2012,Algeria,ALG,1,0,0,1
 2012 Summer Olympics,2012,Bahrain,BRN,1,0,0,1
 2012 Summer Olympics,2012,Grenada,GRN,1,0,0,1
-2012 Summer Olympics,2012,The Bahamas,BAH,1,0,0,1
+2012 Summer Olympics,2012,Bahamas,BAH,1,0,0,1
 2012 Summer Olympics,2012,Uganda,UGA,1,0,0,1
 2012 Summer Olympics,2012,Venezuela,VEN,1,0,0,1
 2012 Summer Olympics,2012,Egypt,EGY,0,3,1,4
@@ -1203,9 +1203,9 @@ edition,year,country,country_noc,gold,silver,bronze,total
 2016 Summer Olympics,2016,Georgia,GEO,2,1,4,7
 2016 Summer Olympics,2016,Azerbaijan,AZE,1,7,10,18
 2016 Summer Olympics,2016,Belarus,BLR,1,4,4,9
-2016 Summer Olympics,2016,Türkiye,TUR,1,3,4,8
+2016 Summer Olympics,2016,Turkey,TUR,1,3,4,8
 2016 Summer Olympics,2016,Armenia,ARM,1,3,0,4
-2016 Summer Olympics,2016,Czechia,CZE,1,2,7,10
+2016 Summer Olympics,2016,Czech Republic,CZE,1,2,7,10
 2016 Summer Olympics,2016,Ethiopia,ETH,1,2,5,8
 2016 Summer Olympics,2016,Slovenia,SLO,1,2,1,4
 2016 Summer Olympics,2016,Indonesia,INA,1,2,0,3
@@ -1215,7 +1215,7 @@ edition,year,country,country_noc,gold,silver,bronze,total
 2016 Summer Olympics,2016,Taiwan,TPE,1,0,2,3
 2016 Summer Olympics,2016,Ivory Coast,CIV,1,0,1,2
 2016 Summer Olympics,2016,Independent Athletes,IOA,1,0,1,2
-2016 Summer Olympics,2016,The Bahamas,BAH,1,0,1,2
+2016 Summer Olympics,2016,Bahamas,BAH,1,0,1,2
 2016 Summer Olympics,2016,Fiji,FIJ,1,0,0,1
 2016 Summer Olympics,2016,Jordan,JOR,1,0,0,1
 2016 Summer Olympics,2016,Kosovo,KOS,1,0,0,1
@@ -1266,7 +1266,7 @@ edition,year,country,country_noc,gold,silver,bronze,total
 2020 Summer Olympics,2020,Hungary,HUN,6,7,7,20
 2020 Summer Olympics,2020,South Korea,KOR,6,4,10,20
 2020 Summer Olympics,2020,Poland,POL,4,5,5,14
-2020 Summer Olympics,2020,Czechia,CZE,4,4,3,11
+2020 Summer Olympics,2020,Czech Republic,CZE,4,4,3,11
 2020 Summer Olympics,2020,Kenya,KEN,4,4,2,10
 2020 Summer Olympics,2020,Norway,NOR,4,2,2,8
 2020 Summer Olympics,2020,Jamaica,JAM,4,1,4,9
@@ -1283,7 +1283,7 @@ edition,year,country,country_noc,gold,silver,bronze,total
 2020 Summer Olympics,2020,Uzbekistan,UZB,3,0,2,5
 2020 Summer Olympics,2020,Georgia,GEO,2,5,1,8
 2020 Summer Olympics,2020,Taiwan,TPE,2,4,6,12
-2020 Summer Olympics,2020,Türkiye,TUR,2,2,9,13
+2020 Summer Olympics,2020,Turkey,TUR,2,2,9,13
 2020 Summer Olympics,2020,Greece,GRE,2,1,1,4
 2020 Summer Olympics,2020,Uganda,UGA,2,1,1,4
 2020 Summer Olympics,2020,Ecuador,ECU,2,1,0,3
@@ -1291,7 +1291,7 @@ edition,year,country,country_noc,gold,silver,bronze,total
 2020 Summer Olympics,2020,Israel,ISR,2,0,2,4
 2020 Summer Olympics,2020,Qatar,QAT,2,0,1,3
 2020 Summer Olympics,2020,Kosovo,KOS,2,0,0,2
-2020 Summer Olympics,2020,The Bahamas,BAH,2,0,0,2
+2020 Summer Olympics,2020,Bahamas,BAH,2,0,0,2
 2020 Summer Olympics,2020,Ukraine,UKR,1,6,12,19
 2020 Summer Olympics,2020,Belarus,BLR,1,3,3,7
 2020 Summer Olympics,2020,Romania,ROU,1,3,0,4
@@ -1329,7 +1329,7 @@ edition,year,country,country_noc,gold,silver,bronze,total
 2020 Summer Olympics,2020,Saudi Arabia,KSA,0,1,0,1
 2020 Summer Olympics,2020,Lithuania,LTU,0,1,0,1
 2020 Summer Olympics,2020,Namibia,NAM,0,1,0,1
-2020 Summer Olympics,2020,North Macedonia,MKD,0,1,0,1
+2020 Summer Olympics,2020,Macedonia,MKD,0,1,0,1
 2020 Summer Olympics,2020,Turkmenistan,TKM,0,1,0,1
 2020 Summer Olympics,2020,Kazakhstan,KAZ,0,0,8,8
 2020 Summer Olympics,2020,Mexico,MEX,0,0,4,4
@@ -1369,7 +1369,7 @@ edition,year,country,country_noc,gold,silver,bronze,total
 2024 Summer Olympics,2024,Belgium,BEL,3,1,6,10
 2024 Summer Olympics,2024,Bulgaria,BUL,3,1,3,7
 2024 Summer Olympics,2024,Serbia,SRB,3,1,1,5
-2024 Summer Olympics,2024,Czechia,CZE,3,0,2,5
+2024 Summer Olympics,2024,Czech Republic,CZE,3,0,2,5
 2024 Summer Olympics,2024,Denmark,DEN,2,2,5,9
 2024 Summer Olympics,2024,Azerbaijan,AZE,2,2,3,7
 2024 Summer Olympics,2024,Croatia,CRO,2,2,3,7
@@ -1406,7 +1406,7 @@ edition,year,country,country_noc,gold,silver,bronze,total
 2024 Summer Olympics,2024,Morocco,MAR,1,0,1,2
 2024 Summer Olympics,2024,Dominica,DMA,1,0,0,1
 2024 Summer Olympics,2024,Pakistan,PAK,1,0,0,1
-2024 Summer Olympics,2024,Türkiye,TUR,0,3,5,8
+2024 Summer Olympics,2024,Turkey,TUR,0,3,5,8
 2024 Summer Olympics,2024,Mexico,MEX,0,3,2,5
 2024 Summer Olympics,2024,Armenia,ARM,0,3,1,4
 2024 Summer Olympics,2024,Colombia,COL,0,3,1,4
@@ -1426,7 +1426,7 @@ edition,year,country,country_noc,gold,silver,bronze,total
 2024 Summer Olympics,2024,Grenada,GRN,0,0,2,2
 2024 Summer Olympics,2024,Malaysia,MAS,0,0,2,2
 2024 Summer Olympics,2024,Puerto Rico,PUR,0,0,2,2
-2024 Summer Olympics,2024,Cabo Verde,CPV,0,0,1,1
+2024 Summer Olympics,2024,Cape Verde,CPV,0,0,1,1
 2024 Summer Olympics,2024,Ivory Coast,CIV,0,0,1,1
 2024 Summer Olympics,2024,Independent Athletes,IOA,0,0,1,1
 2024 Summer Olympics,2024,Peru,PER,0,0,1,1

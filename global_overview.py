@@ -61,19 +61,33 @@ def show_global_overview(medals_only, total_medals_per_country, country_list, me
 
         if not country_stats.empty:
             total = int(country_stats['total'].values[0])
-            medals_p_m = country_stats.get('medals_per_million', pd.Series([0])).values[0]
         else:
             total = 0
-            medals_p_m = 0
 
-        best_sport = country_df['sport'].mode()[0] if not country_df.empty else "N/A"
         best_year = country_df['year'].mode()[0] if not country_df.empty else "N/A"
 
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("🥇 Total Medals", total)
-        m2.metric("👥 Medals / 1M", f"{medals_p_m:.2f}")
-        m3.metric("🏆 Best Sport", best_sport)
-        m4.metric("📅 Best Year", str(best_year))
+        # Get Top 3 Sports
+        top_sports = country_df.groupby('sport')['medal'].count().reset_index().sort_values('medal', ascending=False).head(3).reset_index(drop=True)
+        
+        # Build top sports text with medal colors
+        if len(top_sports) >= 1:
+            medals_info = [("🥇", "#FFD700"), ("🥈", "#A8A8A8"), ("🥉", "#CD7F32")]
+            sport_parts = []
+            for i in range(min(3, len(top_sports))):
+                emoji, color = medals_info[i]
+                sport_name = top_sports.iloc[i]['sport']
+                sport_parts.append(f"<span style='color:{color}; font-weight:bold;'>{emoji} {sport_name}</span>")
+            top_sports_html = " • ".join(sport_parts)
+        else:
+            top_sports_html = "N/A"
+        
+        # Display metrics in a row: Total Medals | Best Year | Top Sports
+        m1, m2, m3 = st.columns([1, 1, 2])
+        m1.metric("🏅 Total Medals", total)
+        m2.metric("📅 Best Year", str(best_year))
+        with m3:
+            st.markdown("""<div style="font-size: 14px; color: #555; margin-bottom: 4px;">🏆 Top Sports</div>""", unsafe_allow_html=True)
+            st.markdown(f"""<div style="font-size: 16px; line-height: 1.8;">{top_sports_html}</div>""", unsafe_allow_html=True)
 
     st.divider()
 
@@ -133,73 +147,51 @@ def show_global_overview(medals_only, total_medals_per_country, country_list, me
 
     st.divider()
 
-    # --- ROW 3: DETAILED GRAPHS ---
-    c_trend, c_podium = st.columns(2, gap="large")
+    # --- ROW 3: MEDALS TREND (Full Width) ---
+    t_col1, t_col2 = st.columns([2, 1])
+    with t_col1:
+        st.subheader("📈 Medals Trend")
+    with t_col2:
+        trend_mode = st.radio("Metric:", ["Total", "Per Million"], horizontal=True, label_visibility="collapsed")
 
-    with c_trend:
-        t_col1, t_col2 = st.columns([2, 1])
-        with t_col1:
-            st.subheader("Medals Trend")
-        with t_col2:
-            trend_mode = st.radio("Metric:", ["Total", "Per Million"], horizontal=True, label_visibility="collapsed")
+    # 1. Filter raw data
+    raw_td = medals_data[medals_data['country'] == st.session_state.selected_country].copy()
 
-        # 1. Filter raw data
-        raw_td = medals_data[medals_data['country'] == st.session_state.selected_country].copy()
-
-        if not raw_td.empty:
-            # 2. Aggregation Fix: Ensure strictly 1 row per year before merging population
-            # This prevents duplicates if 'medals_data' has multiple entries per year
-            if 'total' in raw_td.columns:
-                td_grouped = raw_td.groupby('year', as_index=False)['total'].sum()
-                td_grouped.rename(columns={'total': 'medals'}, inplace=True)
-            else:
-                td_grouped = pd.DataFrame(columns=['year', 'medals'])
-
-            # Add country column back for the merge
-            td_grouped['country'] = st.session_state.selected_country
-
-            # 3. Merge with population (Yearly basis)
-            country_pop = pop_df[pop_df['country'] == st.session_state.selected_country].copy()
-            td = td_grouped.merge(country_pop[['year', 'population']], on='year', how='left')
-
-            # 4. Calculate Medals per Million
-            td = calculate_medals_per_million(td)
-
-            # Plotting Logic
-            if trend_mode == "Total":
-                y_val = 'medals'
-                color_seq = ["#77DD77"]
-                y_title = "Total Medals"
-            else:
-                y_val = 'medals_per_million'
-                color_seq = ["#1E90FF"]
-                y_title = "Medals / Million"
-
-            if y_val in td.columns:
-                fig = px.line(td, x='year', y=y_val, markers=True,
-                              color_discrete_sequence=color_seq,
-                              hover_data={'medals': True, 'population': True, 'medals_per_million': ':.2f'})
-                fig.update_layout(height=400, yaxis_title=y_title)
-                st.plotly_chart(fig, width='stretch')
-            else:
-                st.error(f"Missing data for {y_val}")
+    if not raw_td.empty:
+        # 2. Aggregation Fix: Ensure strictly 1 row per year before merging population
+        if 'total' in raw_td.columns:
+            td_grouped = raw_td.groupby('year', as_index=False)['total'].sum()
+            td_grouped.rename(columns={'total': 'medals'}, inplace=True)
         else:
-            st.info(f"No medal history data for {st.session_state.selected_country}")
+            td_grouped = pd.DataFrame(columns=['year', 'medals'])
 
-    with c_podium:
-        st.subheader("🏆 Top 3 Sports Podium")
-        top = country_df.groupby('sport')['medal'].count().reset_index().sort_values('medal', ascending=False).head(
-            3).reset_index(drop=True)
-        if len(top) >= 1:
-            pod_data = [{'sport': top.iloc[0]['sport'], 'medal': top.iloc[0]['medal'], 'color': '#FFD700', 'Pos': 2}]
-            if len(top) >= 2: pod_data.append(
-                {'sport': top.iloc[1]['sport'], 'medal': top.iloc[1]['medal'], 'color': '#C0C0C0', 'Pos': 1})
-            if len(top) >= 3: pod_data.append(
-                {'sport': top.iloc[2]['sport'], 'medal': top.iloc[2]['medal'], 'color': '#CD7F32', 'Pos': 3})
-            pdf = pd.DataFrame(pod_data).sort_values('Pos')
-            fig = go.Figure(go.Bar(x=pdf['sport'], y=pdf['medal'], marker_color=pdf['color'], text=pdf['medal'],
-                                   textposition='auto'))
-            fig.update_layout(height=400, yaxis_title="Count")
-            st.plotly_chart(fig, width='stretch')
+        # Add country column back for the merge
+        td_grouped['country'] = st.session_state.selected_country
+
+        # 3. Merge with population (Yearly basis)
+        country_pop = pop_df[pop_df['country'] == st.session_state.selected_country].copy()
+        td = td_grouped.merge(country_pop[['year', 'population']], on='year', how='left')
+
+        # 4. Calculate Medals per Million
+        td = calculate_medals_per_million(td)
+
+        # Plotting Logic
+        if trend_mode == "Total":
+            y_val = 'medals'
+            color_seq = ["#77DD77"]
+            y_title = "Total Medals"
         else:
-            st.info("No sufficient data for podium.")
+            y_val = 'medals_per_million'
+            color_seq = ["#1E90FF"]
+            y_title = "Medals / Million"
+
+        if y_val in td.columns:
+            fig = px.line(td, x='year', y=y_val, markers=True,
+                          color_discrete_sequence=color_seq,
+                          hover_data={'medals': True, 'population': True, 'medals_per_million': ':.2f'})
+            fig.update_layout(height=400, yaxis_title=y_title)
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.error(f"Missing data for {y_val}")
+    else:
+        st.info(f"No medal history data for {st.session_state.selected_country}")
