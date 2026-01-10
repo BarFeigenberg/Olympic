@@ -28,11 +28,11 @@ BIH,Bosnia and Herzegovina
 BOT,Botswana
 BRA,Brazil
 IVB,British Virgin Islands
-BRU,Brunei Darussalam
+BRU,Brunei
 BUL,Bulgaria
 BUR,Burkina Faso
 BDI,Burundi
-CPV,Cabo Verde
+CPV,Cape Verde
 CAM,Cambodia
 CMR,Cameroon
 CAN,Canada
@@ -51,10 +51,10 @@ CRT,Crete
 CRO,Croatia
 CUB,Cuba
 CYP,Cyprus
-CZE,Czechia
+CZE,Czech Republic
 TCH,Czechoslovakia
 PRK,North Korea
-COD,Democratic Republic of the Congo
+COD,Dem. Rep. Congo
 DEN,Denmark
 DJI,Djibouti
 DMA,Dominica
@@ -66,7 +66,7 @@ ESA,El Salvador
 GEQ,Equatorial Guinea
 ERI,Eritrea
 EST,Estonia
-SWZ,Eswatini
+SWZ,Swaziland
 ETH,Ethiopia
 FSM,Micronesia
 FIJ,Fiji
@@ -142,7 +142,7 @@ NZL,New Zealand
 NCA,Nicaragua
 NIG,Niger
 NGR,Nigeria
-MKD,North Macedonia
+MKD,Macedonia
 YAM,Yemen
 NOR,Norway
 OMA,Oman
@@ -170,7 +170,7 @@ LCA,Saint Lucia
 VIN,Saint Vincent and the Grenadines
 SAM,Samoa
 SMR,San Marino
-STP,São Tomé and Príncipe
+STP,Sao Tome and Principe
 SEN,Senegal
 SRB,Serbia
 SEY,Seychelles
@@ -193,14 +193,14 @@ SUI,Switzerland
 SYR,Syria
 TJK,Tajikistan
 THA,Thailand
-BAH,The Bahamas
+BAH,Bahamas
 GAM,The Gambia
-TLS,Timor-Leste
+TLS,East Timor
 TOG,Togo
 TGA,Tonga
 TTO,Trinidad and Tobago
 TUN,Tunisia
-TUR,Türkiye
+TUR,Turkey
 TKM,Turkmenistan
 TUV,Tuvalu
 UGA,Uganda
