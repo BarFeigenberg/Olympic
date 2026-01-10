@@ -174,8 +174,8 @@ def show_athletics_deep_dive(athletics_df):
             is_men_rec = (y == men_record_year)
             is_women_rec = (y == women_record_year)
 
-            # Helper for "WORLD RECORD"
-            wr_label = '<br><span style="font-size:9px">WORLD RECORD</span>'
+            # Helper for "Olympic RECORD"
+            wr_label = '<br><span style="font-size:9px">OLYMPIC RECORD</span>'
 
             if is_men_rec and is_women_rec:
                 tick_text.append(f'<span style="color:purple; font-weight:900;">{y}{wr_label}</span>')

@@ -1,10 +1,5 @@
-import streamlit as st
-import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
-import numpy as np
-
-from data_processor import get_medals_by_sport_category, CATEGORY_ORDER
+from data_processor import *
 
 
 def create_host_radar_chart(medals_only, host_data, h_noc, h_year, view_mode="All"):
@@ -498,6 +493,7 @@ def show_host_advantage(host_data, medals_only, country_ref):
         end_window = h_year + 12
         all_years_timeline = list(range(start_window, end_window + 4, 4))
 
+        country_history = medals_only[medals_only['noc'] == h_noc].groupby('year')['medal'].count().reset_index()
         window_df = country_history[
             (country_history['year'] >= start_window) & (country_history['year'] <= end_window)].copy()
         window_df['prev_medals'] = window_df['medal'].shift(1)
