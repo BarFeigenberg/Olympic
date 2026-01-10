@@ -1,5 +1,6 @@
 import streamlit as st
 import plotly.express as px
+import plotly.graph_objects as go
 import numpy as np
 
 
@@ -26,45 +27,68 @@ def show_wellness_winning(gap_df):
             )
 
         # -------------------------
+        # DEFINING ANNOTATION STYLES
+        # -------------------------
+
+        # Function to create the Background Year Annotation
+        def get_year_annotation(year_value):
+            return dict(
+                text=str(year_value),
+                xref="paper", yref="paper",
+                x=0.5, y=0.5,
+                showarrow=False,
+                font=dict(size=200, color="rgba(200, 200, 200, 0.2)")  # Large transparent gray
+            )
+
+        # Helper string for the subtitle next to the title
+        bubble_legend_text = "<span style='font-size: 14px; color: #555; font-weight: normal;'>                                                            Bubble size = Delegation size</span>"
 
         if roi_mode == "Efficiency (Medals per Million)":
+            # --- EFFICIENCY VIEW ---
+            # Updated ticks as requested: removed 3, 6, 10
+            custom_ticks_eff = [0, 1, 2, 4, 20]
+            tick_positions_eff = list(range(len(custom_ticks_eff)))
+
+            def map_efficiency(val):
+                if val < 0: return 0
+                return np.interp(val, custom_ticks_eff, tick_positions_eff)
+
+            gap_df['y_pos_efficiency'] = gap_df['medals_per_million'].apply(map_efficiency)
+            max_idx_eff = len(custom_ticks_eff) - 1
+
             fig = px.scatter(
-                gap_df, x="life_expectancy", y="medals_per_million",
+                gap_df, x="life_expectancy", y="y_pos_efficiency",
                 animation_frame="year", animation_group="country_name",
                 size="delegation_size", color="continent",
-                hover_name="country_name", size_max=50,
+                hover_name="country_name",
+                hover_data={"y_pos_efficiency": False, "medals_per_million": ':.2f'},
+                size_max=50,
                 range_x=[35, 90],
-                range_y=[-1.5, 7.5],
-                title="1. Health vs Talent (Medals Per Million)"
+                range_y=[-0.5, max_idx_eff + 0.5],
+                title=f"Health vs Talent (Medals Per Million - Non-Linear Scale){bubble_legend_text}"
             )
 
             fig.update_layout(
                 height=700,
                 yaxis=dict(
-                    tickvals=[0, 2, 4, 6],
-                    ticktext=["0", "2", "4", "6"],
-                    title="Medals Per Million"
+                    tickvals=tick_positions_eff,
+                    ticktext=[str(x) for x in custom_ticks_eff],
+                    title="Medals Per Million (Non-Linear Scale)",
+                    showgrid=True,
+                    gridcolor='#E5E5E5'
                 )
             )
 
         else:
-            # --- MANUAL SPACING (THE "RANK" METHOD) ---
-
-            # 1. Define exactly the ticks you want (Updated List)
+            # --- TOTAL MEDALS VIEW ---
             custom_ticks = [1, 3, 7, 12, 20, 30, 50, 80, 200]
-
-            # 2. Create corresponding "Positions" (0, 1, 2, 3...)
             tick_positions = list(range(len(custom_ticks)))
 
-            # 3. Map real medal values to these positions
             def map_to_custom_scale(val):
-                if val < 1:
-                    return 0
+                if val < 1: return 0
                 return np.interp(val, custom_ticks, tick_positions)
 
             gap_df['y_pos_artificial'] = gap_df['medals'].apply(map_to_custom_scale)
-
-            # Calculate dynamic range
             max_idx = len(custom_ticks) - 1
 
             fig = px.scatter(
@@ -73,18 +97,15 @@ def show_wellness_winning(gap_df):
                 size="delegation_size", color="continent",
                 hover_name="country_name", hover_data=["medals"],
                 size_max=50, range_x=[35, 90],
-
-                # Dynamic range to fit all ticks comfortably
                 range_y=[-0.5, max_idx + 0.5],
-
                 log_y=False,
-                title="2. Health vs Total Medals (Custom Spaced)"
+                title=f"Health vs Total Medals (Non-Linear Scale){bubble_legend_text}"
             )
 
             fig.update_layout(
                 height=700,
                 yaxis=dict(
-                    title="Total Medals",
+                    title="Total Medals (Non-Linear Scale)",
                     tickvals=tick_positions,
                     ticktext=[str(x) for x in custom_ticks],
                     showgrid=True,
@@ -92,7 +113,42 @@ def show_wellness_winning(gap_df):
                 )
             )
 
-        # Slow down animation
-        fig.layout.updatemenus[0].buttons[0].args[1]["frame"]["duration"] = 700
+        # -------------------------
+        # ANIMATION FRAME UPDATES
+        # -------------------------
 
-        st.plotly_chart(fig, width='stretch')
+        # 1. Set the Initial Layout (Start Year only)
+        initial_year = gap_df['year'].min()
+        fig.update_layout(
+            annotations=[
+                get_year_annotation(initial_year)
+            ]
+        )
+
+        # 2. Force Update on Every Animation Frame
+        if fig.frames:
+            for frame in fig.frames:
+                frame_year = frame.name
+
+                # Update annotations to ONLY show the changing year
+                frame.layout = go.Layout(
+                    annotations=[get_year_annotation(frame_year)]
+                )
+
+        # Adjust animation speed and force redraw for annotations
+        fig.layout.updatemenus[0].buttons[0].args[1]["frame"]["duration"] = 700
+        fig.layout.updatemenus[0].buttons[0].args[1]["frame"]["redraw"] = True
+        fig.layout.updatemenus[0].buttons[0].args[1]["transition"]["duration"] = 300
+        
+        # Also update sliders to redraw on each step
+        if fig.layout.sliders:
+            for slider in fig.layout.sliders:
+                for step in slider.steps:
+                    # Convert tuple to list to allow modification
+                    args_list = list(step.args)
+                    args_list[1] = {"frame": {"duration": 700, "redraw": True}, 
+                                    "mode": "immediate",
+                                    "transition": {"duration": 300}}
+                    step.args = args_list
+
+        st.plotly_chart(fig, use_container_width=True)
