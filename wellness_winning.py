@@ -151,4 +151,4 @@ def show_wellness_winning(gap_df):
                                     "transition": {"duration": 300}}
                     step.args = args_list
 
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')

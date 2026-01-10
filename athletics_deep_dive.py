@@ -108,6 +108,7 @@ def show_athletics_deep_dive(athletics_df):
             labels={'gender_label': 'Gender'}
         )
         fig_trend.update_traces(line_width=2, marker_size=0)
+        fig_trend.update_traces(hoverinfo='skip', hovertemplate=None, selector=dict(type='scatter', mode='lines'))
 
         # 2. Add Markers (Linked to Legend)
 
@@ -208,7 +209,7 @@ def show_athletics_deep_dive(athletics_df):
         if not is_high:
             fig_trend.update_yaxes(autorange="reversed")
 
-        st.plotly_chart(fig_trend, use_container_width=True)
+        st.plotly_chart(fig_trend, width='stretch')
 
         # --- 4. LOWER SECTION: PHYSICAL ANALYSIS (GENDER SPECIFIC) ---
         st.divider()
