@@ -2,6 +2,8 @@ from data_processor import *
 from data_loader import *
 from PIL import Image
 
+pd.set_option('future.no_silent_downcasting', True)
+
 # Load the image
 icon_image = Image.open("olympics ring.png")
 

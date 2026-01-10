@@ -11,7 +11,6 @@ from data_processor import (
     get_all_world_countries
 )
 
-
 def show_global_overview(medals_only, total_medals_per_country, country_list, medals_data):
     st.title("🏅 Global Olympic Insights")
     st.divider()
@@ -99,8 +98,8 @@ def show_global_overview(medals_only, total_medals_per_country, country_list, me
     st.divider()
 
     # --- ROW 2: WORLD MAP ---
-    bins = [0, 0.2, 0.5, 1, 3, 7, 15, 30, 60, 2000]
-    bin_labels = ["0 – 0.2", "0.2 – 0.5", "0.5 – 1", "1 – 3", "3 – 7", "7 – 15", "15 – 30", "30 – 60", "60+"]
+    bins = [0, 0.2, 0.5, 1, 3, 7, 15, 30, 2000]
+    bin_labels = ["0 – 0.2", "0.2 – 0.5", "0.5 – 1", "1 – 3", "3 – 7", "7 – 15", "15 – 30", "30 – 60"]
 
     if 'medals_per_million' in map_df.columns:
         map_df['bin_label'] = pd.cut(
@@ -130,7 +129,7 @@ def show_global_overview(medals_only, total_medals_per_country, country_list, me
         projection="natural earth"
     )
 
-    # Highlight selected country with blue border (not solid black)
+    # Highlight selected country with BLACK border
     sel_data = map_viz_df[map_viz_df['country'] == st.session_state.selected_country]
     if not sel_data.empty:
         fig_map.add_trace(go.Choropleth(
@@ -140,7 +139,7 @@ def show_global_overview(medals_only, total_medals_per_country, country_list, me
             colorscale=[[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0)']],  # Transparent fill
             showscale=False,
             hoverinfo="skip",
-            marker_line_color='#2196F3',  # Blue border
+            marker_line_color='black',  # Blue border
             marker_line_width=3
         ))
 

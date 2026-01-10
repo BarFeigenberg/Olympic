@@ -290,7 +290,8 @@ def create_host_advantage_file():
 @st.cache_data
 def get_processed_country_data():
     countries = load_raw_country_data()
-    if countries.empty: return pd.DataFrame()
+    if countries.empty:
+        return pd.DataFrame()
 
     countries.columns = countries.columns.str.lower()
 
@@ -367,7 +368,6 @@ def get_continent_mapping():
 @st.cache_data
 def get_processed_athletics_data():
     df = load_raw_athletics_data()
-    df = df.drop_duplicates(subset=['gender', 'event', 'year', 'result'], keep='last')
 
     df.drop(columns=['extra'], inplace=True, errors='ignore')
     ref = get_name_map()
@@ -617,7 +617,7 @@ def get_combined_population_data():
 
         # Fill ISO forward/backward
         if 'iso' in group.columns:
-            group['iso'] = group['iso'].ffill().bfill()
+            group['iso'] = group['iso'].ffill().bfill().infer_objects(copy=False)
 
         # Filter only Olympic years
         olympic_data = group.loc[group.index.isin(olympic_years)].reset_index()

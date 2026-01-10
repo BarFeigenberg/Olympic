@@ -26,16 +26,23 @@ def get_local_athlete_image_html(athlete_name):
 
 def show_athletics_deep_dive(athletics_df):
     bio_df = load_athlete_bio_data()
-    athletics_df = athletics_df.rename(columns={'numericresult': 'numeric_result'})
-    athletics_df = athletics_df.rename(columns={'baseevent': 'base_event'})
+
     if athletics_df is None or athletics_df.empty:
         st.error("⚠️ Data not found! Please check 'results.csv'.")
         return
-
+    print("Check 1")
     # Data Cleaning
+    athletics_df.columns = athletics_df.columns.str.lower()
+    print(athletics_df.columns)
+    print("Check 2")
+    athletics_df = athletics_df.rename(columns={'numericresult': 'numeric_result'})
+    print(athletics_df.columns)
+    print("Check 3")
+    if 'event' in athletics_df.columns:
+        athletics_df['event'] = athletics_df['event'].astype(str).str.strip().str.upper()
     athletics_df['gender'] = athletics_df['gender'].astype(str).str.strip().str.upper()
-    events = sorted(athletics_df['base_event'].unique().tolist())
-
+    events = sorted(athletics_df['event'].unique().tolist())
+    print("Check 4")
     # --- 1. SELECTION FILTERS (UPDATED LAYOUT) ---
     col_title, col_spacer, col_event = st.columns([5, 2, 2], gap="small")
 
@@ -50,9 +57,8 @@ def show_athletics_deep_dive(athletics_df):
         st.write("")
         default_idx = events.index('100M') if '100M' in events else 0
         e_name = st.selectbox("Select Event:", events, index=default_idx)
-
         # Filter by Event ONLY (Keep both genders)
-        vdf = athletics_df[athletics_df['base_event'] == e_name].copy()
+        vdf = athletics_df[athletics_df['event'] == e_name].copy()
 
         # Create a nice label for the legend
         vdf['gender_label'] = vdf['gender'].map({
@@ -160,7 +166,6 @@ def show_athletics_deep_dive(athletics_df):
             font=dict(size=11, color="gray"),
             xanchor="right"
         )
-
         # 4. Smart X-Axis Formatting
         min_year = int(vdf['year'].min())
         max_year = 2024
@@ -237,7 +242,6 @@ def show_athletics_deep_dive(athletics_df):
             selected_gender = st.radio("Select Gender for Analysis:", gender_options, horizontal=True)
 
             merged_filtered = merged[merged['gender_label'] == selected_gender].copy()
-
             if not merged_filtered.empty:
                 # --- 1. MEDAL & COUNTRY SETUP ---
                 def format_medal(m):
@@ -349,7 +353,7 @@ def show_athletics_deep_dive(athletics_df):
                 # Changed size to 16, and line width to 0 (no border)
                 fig_phys.update_traces(marker=dict(size=21, line=dict(width=0)))
 
-                st.plotly_chart(fig_phys, use_container_width=True)
+                st.plotly_chart(fig_phys, width='stretch')
                 st.caption(
                     f"🎨 **Color Legend:** Darker shades = Better Results. The ranges represent actual {unit_title.lower()}.")
 

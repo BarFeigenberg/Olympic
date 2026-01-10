@@ -255,6 +255,78 @@ def create_host_radar_chart(medals_only, host_data, h_noc, h_year, view_mode="Al
     return fig
 
 
+def create_parallel_coordinates_chart(medals_only, host_data, selected_noc, focus_year=None):
+    medals_only = medals_only[medals_only['medal'] != 'No medal'].drop_duplicates(
+        subset=['year', 'noc', 'event', 'medal'])
+
+    global_counts = medals_only.groupby('year')['medal'].count().reset_index()
+    global_counts.columns = ['year', 'global_total']
+
+    country_data = medals_only[medals_only['noc'] == selected_noc]
+    if country_data.empty:
+        return None
+
+    country_stats = country_data.groupby('year')['medal'].count().reset_index()
+    country_stats.columns = ['year', 'country_total']
+
+    df = pd.merge(country_stats, global_counts, on='year', how='left')
+    df['percentage'] = (df['country_total'] / df['global_total']) * 100
+
+    host_years = host_data[host_data['host_noc'] == selected_noc]['year'].unique()
+    df['is_host'] = df['year'].apply(lambda x: 1 if x in host_years else 0)
+
+    if focus_year:
+        def get_color_val(row):
+            if row['year'] == focus_year: return 2
+            return row['is_host']
+
+        df['color_val'] = df.apply(get_color_val, axis=1)
+
+        colorscale = [
+            [0, 'rgba(0, 0, 139, 0.07)'],  # Guest Year - Very Transparent Blue
+            [0.5, 'rgba(0, 255, 0, 0.07)'],  # Host Year - Very Transparent Green
+            [1, 'rgba(255, 0, 0, 1)']  # Focused Year - Solid Bright Red
+        ]
+    else:
+        df['color_val'] = df['is_host']
+        colorscale = [[0, '#00008B'], [1, '#00FF00']]
+
+    df = df.sort_values(by='color_val', ascending=True)
+    full_timeline = list(range(1896, 2025, 4))
+
+    fig = go.Figure(data=
+    go.Parcoords(
+        line=dict(
+            color=df['color_val'],
+            colorscale=colorscale,
+            showscale=False
+        ),
+        dimensions=[
+            dict(label='Year',
+                 values=df['year'],
+                 tickvals=full_timeline,
+                 ticktext=[str(y) for y in full_timeline],
+                 range=[1896, 2024]),
+            dict(range=[-1, 1.5],
+                 tickvals=[-1, 0, 1, 1.5],
+                 ticktext=['', 'No', 'Yes', ''],
+                 label='Is Host?', values=df['is_host']),
+            dict(label='Medals', values=df['country_total']),
+            dict(label='Medals Share (%)', values=df['percentage'], tickformat='.1f')
+        ],
+        labelfont=dict(size=13, color='black', family="Arial Black"),
+        tickfont=dict(size=10, color='black')
+    )
+    )
+
+    fig.update_layout(
+        height=800,
+        margin=dict(l=60, r=60, t=40, b=40),
+        paper_bgcolor="white",
+        plot_bgcolor="white"
+    )
+
+    return fig
 
 
 def selection_dropdown(host_data, country_ref):
@@ -319,85 +391,7 @@ def show_host_advantage(host_data, medals_only, country_ref):
         h_medals = int(row['total_medals'])
         full_country_name = noc_map.get(h_noc, h_noc)
 
-    # --- RADAR CHART: Medal Distribution by Sport Category ---
-    if sel_event and h_noc and h_year:
-        st.subheader(f"🎯 Medal Distribution by Sport Category: {full_country_name} - {h_year}")
-
-        # --- PRE-CALCULATE KPIS FOR METRICS ---
-        country_history = medals_only[medals_only['noc'] == h_noc].groupby('year')['medal'].count().reset_index()
-        pre_years = country_history[(country_history['year'] < h_year) & (country_history['year'] >= h_year - 12)]
-        avg_pre = pre_years['medal'].mean() if not pre_years.empty else 0
-        diff = h_medals - avg_pre
-        boost_pct = (diff / avg_pre * 100) if avg_pre > 0 else 0
-
-        # --- CSS STYLING FOR METRICS (Card Style) ---
-        st.markdown("""
-                <style>
-                    /* Style the metric container */
-                    [data-testid="stMetric"] {
-                        background-color: white;
-                        border: 1px solid #dedede;
-                        padding: 10px;
-                        border-radius: 10px;
-                        color: black;
-                        box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
-                        margin-bottom: 10px; /* Space between vertical cards */
-                    }
-                    /* Force label color */
-                    [data-testid="stMetricLabel"] p {
-                        color: #444 !important;
-                    }
-                    /* Force value color */
-                    [data-testid="stMetricValue"] div {
-                        color: black !important;
-                    }
-
-                    /* RADIO BUTTON SMALLER STYLE */
-                    div[role="radiogroup"] label p {
-                        font-size: 13px !important;
-                    }
-                    div[role="radiogroup"] {
-                        gap: 0px !important;
-                    }
-                </style>
-                """, unsafe_allow_html=True)
-        
-        # --- LAYOUT: [Chart 2/3] | [Metrics 1/3] ---
-        col_chart, col_metrics = st.columns([2, 1], gap="medium")
-
-        with col_chart:
-            # Top controls - just view mode
-            ctrl_col1, ctrl_col2 = st.columns([2, 1])
-            with ctrl_col1:
-                st.caption(f"Comparing {h_year} performance across sport categories")
-            with ctrl_col2:
-                view_mode = st.radio(
-                    "View Mode:",
-                    ["All", "Past + Current", "Current + Future"],
-                    horizontal=False,
-                    label_visibility="collapsed" # Save space
-                )
-            
-            # Create and display radar chart
-            radar_fig = create_host_radar_chart(medals_only, host_data, h_noc, h_year, view_mode)
-            if radar_fig:
-                st.plotly_chart(radar_fig, use_container_width=True)
-            else:
-                st.info("No medal data available for this selection.")
-
-        with col_metrics:
-            st.write("#### Performance Stats")
-            st.metric("🏅 Host Year Medals", h_medals)
-            st.metric("📊 Pre-Host Avg (12y)", f"{avg_pre:.1f}")
-            st.metric("📈 Net Gain", f"+{int(diff)}" if diff > 0 else int(diff))
-            
-            delta_color = "normal" if boost_pct > 0 else "off"
-            st.metric("🚀 Performance Boost", f"{boost_pct:.1f}%", delta=f"{boost_pct:.1f}%",
-                      delta_color=delta_color)
-        
-        st.divider()
-
-    # --- 3. THE GLOBAL "BIG QUESTION" CHART ---
+    # THE GLOBAL "BIG QUESTION" CHART ---
     st.subheader("🌍 The Big Picture: Does Hosting Pay Off?")
 
     # Calculate 'Lift %'
@@ -478,105 +472,119 @@ def show_host_advantage(host_data, medals_only, country_ref):
 
     st.divider()
 
-    # --- 4. DRILL DOWN (DEEP DIVE) ---
-    if sel_event:
-        st.subheader(f"🔍 Country Deep Dive: {full_country_name}")
-        
-        # (KPI Logic moved up)
-        
-        st.divider()
+    # --- RADAR CHART: Medal Distribution by Sport Category ---
+    if sel_event and h_noc and h_year:
+        st.subheader(f"🎯 Medal Distribution by Sport Category: {full_country_name} - {h_year}")
 
-        # --- Timeline Chart ---
-        st.subheader(f"📈 The Road to Hosting: {full_country_name}")
-
-        start_window = h_year - 24
-        end_window = h_year + 12
-        all_years_timeline = list(range(start_window, end_window + 4, 4))
-
+        # --- PRE-CALCULATE KPIS FOR METRICS ---
         country_history = medals_only[medals_only['noc'] == h_noc].groupby('year')['medal'].count().reset_index()
-        window_df = country_history[
-            (country_history['year'] >= start_window) & (country_history['year'] <= end_window)].copy()
-        window_df['prev_medals'] = window_df['medal'].shift(1)
-        window_df['year_boost'] = (
-                (window_df['medal'] - window_df['prev_medals']) / window_df['prev_medals'] * 100).fillna(0)
+        pre_years = country_history[(country_history['year'] < h_year) & (country_history['year'] >= h_year - 12)]
+        avg_pre = pre_years['medal'].mean() if not pre_years.empty else 0
+        diff = h_medals - avg_pre
+        boost_pct = (diff / avg_pre * 100) if avg_pre > 0 else 0
 
-        window_df['tooltip_title'] = window_df['year'].apply(
-            lambda y: f"HOST YEAR: {y}" if y == h_year else f"Year: {y}")
+        # --- CSS STYLING FOR METRICS (Card Style) ---
+        st.markdown("""
+                <style>
+                    /* Style the metric container */
+                    [data-testid="stMetric"] {
+                        background-color: white;
+                        border: 1px solid #dedede;
+                        padding: 10px;
+                        border-radius: 10px;
+                        color: black;
+                        box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+                        margin-bottom: 10px; /* Space between vertical cards */
+                    }
+                    /* Force label color */
+                    [data-testid="stMetricLabel"] p {
+                        color: #444 !important;
+                    }
+                    /* Force value color */
+                    [data-testid="stMetricValue"] div {
+                        color: black !important;
+                    }
 
-        fig_trend = px.line(window_df, x='year', y='medal', markers=True)
+                    /* RADIO BUTTON SMALLER STYLE */
+                    div[role="radiogroup"] label p {
+                        font-size: 13px !important;
+                    }
+                    div[role="radiogroup"] {
+                        gap: 0px !important;
+                    }
+                </style>
+                """, unsafe_allow_html=True)
+        
+        # --- LAYOUT: [Chart 2/3] | [Metrics 1/3] ---
+        col_chart, col_metrics = st.columns([2, 1], gap="medium")
 
-        fig_trend.update_traces(
-            line_color='#1E90FF',
-            marker_color='#1E90FF',
-            marker_size=8,
-            hovertemplate="<b>%{customdata[1]}</b><br>Medals: %{y}<br>Change: %{customdata[0]:.1f}%<extra></extra>",
-            customdata=window_df[['year_boost', 'tooltip_title']]
-        )
-
-        max_medals = window_df['medal'].max() if not window_df.empty else 10
-        if max_medals <= 15:
-            y_dtick = 1
-        elif max_medals <= 40:
-            y_dtick = 5
-        elif max_medals <= 100:
-            y_dtick = 10
-        else:
-            y_dtick = 20
-
-        tick_text = []
-        for y in all_years_timeline:
-            if y == h_year:
-                tick_text.append(
-                    f'<span style="color:#FF8C00; font-weight:bold; font-size:14px">{y}<br>HOST YEAR</span>')
+        with col_chart:
+            # Top controls - just view mode
+            ctrl_col1, ctrl_col2 = st.columns([2, 1])
+            with ctrl_col1:
+                st.caption(f"Comparing {h_year} performance across sport categories")
+            with ctrl_col2:
+                view_mode = st.radio(
+                    "View Mode:",
+                    ["All", "Past + Current", "Current + Future"],
+                    horizontal=False,
+                    label_visibility="collapsed" # Save space
+                )
+            
+            # Create and display radar chart
+            radar_fig = create_host_radar_chart(medals_only, host_data, h_noc, h_year, view_mode)
+            if radar_fig:
+                st.plotly_chart(radar_fig, width='stretch')
             else:
-                tick_text.append(str(y))
+                st.info("No medal data available for this selection.")
 
-        fig_trend.update_layout(
-            height=400,
-            xaxis=dict(title="", tickmode='array', tickvals=all_years_timeline, ticktext=tick_text),
-            yaxis=dict(title="Total Medals", dtick=y_dtick, rangemode="tozero"),
-            plot_bgcolor='white',
-            hovermode="closest"
-        )
-        fig_trend.update_yaxes(showgrid=True, gridwidth=1, gridcolor='lightgray')
-        st.plotly_chart(fig_trend, width='stretch')
+        with col_metrics:
+            st.write("#### Performance Stats")
+            st.metric("🏅 Host Year Medals", h_medals)
+            st.metric("📊 Pre-Host Avg (12y)", f"{avg_pre:.1f}")
+            st.metric("📈 Net Gain", f"+{int(diff)}" if diff > 0 else int(diff))
+            
+            delta_color = "normal" if boost_pct > 0 else "off"
+            st.metric("🚀 Performance Boost", f"{boost_pct:.1f}%", delta=f"{boost_pct:.1f}%",
+                      delta_color=delta_color)
 
-        st.divider()
+    st.divider()
+    if sel_event:
+        st.subheader("📊 Performance Trajectory Analysis")
 
-        # --- Sports Breakdown ---
-        st.subheader(f"🏆 Where did {full_country_name} win the extra medals?")
+        col_chart, col_info = st.columns([5, 1], gap="small")
+        country_years = sorted(medals_only[medals_only['noc'] == h_noc]['year'].unique())
 
-        host_year_sports = medals_only[(medals_only['noc'] == h_noc) & (medals_only['year'] == h_year)]
-        sport_counts = host_year_sports['sport'].value_counts().reset_index()
-        sport_counts.columns = ['sport', 'count']
-
-        prev_year = h_year - 4
-        prev_year_sports = medals_only[(medals_only['noc'] == h_noc) & (medals_only['year'] == prev_year)]
-        prev_counts = prev_year_sports['sport'].value_counts().reset_index()
-        prev_counts.columns = ['sport', 'prev_count']
-
-        sport_comp = pd.merge(sport_counts, prev_counts, on='sport', how='outer').fillna(0)
-        sport_comp = sport_comp[sport_comp['count'] > sport_comp['prev_count']]
-        sport_comp = sport_comp.sort_values('count', ascending=False).head(10)
-
-        if not sport_comp.empty:
-            fig_sports = go.Figure()
-            fig_sports.add_trace(go.Bar(
-                y=sport_comp['sport'], x=sport_comp['prev_count'],
-                name=f"{prev_year}", orientation='h', marker_color='#9B59B6'
-            ))
-            fig_sports.add_trace(go.Bar(
-                y=sport_comp['sport'], x=sport_comp['count'],
-                name=f"{h_year} (Host)", orientation='h', marker_color='#00BFFF'
-            ))
-
-            fig_sports.update_layout(
-                barmode='group', height=500, yaxis={'categoryorder': 'total ascending'},
-                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-                plot_bgcolor='white'
+        with col_info:
+            focus_year = st.selectbox(
+                "Year:",
+                ["All"] + list(reversed(country_years))
             )
-            fig_sports.update_xaxes(showgrid=True, gridwidth=1, gridcolor='lightgray')
-            st.plotly_chart(fig_sports, width='stretch')
-        else:
-            st.info(
-                f"No specific sports found where {full_country_name} improved medal count compared to the previous Olympics.")
+
+            focus_year_val = None if focus_year == "All" else int(focus_year)
+            st.write("")
+
+            if focus_year_val:
+                st.markdown(f"#### {focus_year_val}")
+
+                m_only_filtered = medals_only[medals_only['medal'] != 'No medal'].drop_duplicates(
+                    subset=['year', 'noc', 'event', 'medal'])
+                y_data = m_only_filtered[
+                    (m_only_filtered['noc'] == h_noc) & (m_only_filtered['year'] == focus_year_val)]
+                m_count = len(y_data)
+
+                g_total = m_only_filtered[m_only_filtered['year'] == focus_year_val].shape[0]
+                share = (m_count / g_total * 100) if g_total > 0 else 0
+
+                st.metric("Medals", m_count)
+                st.metric("Share", f"{share:.1f}%")
+
+                is_host_year = focus_year_val in host_data[host_data['host_noc'] == h_noc]['year'].values
+                st.caption(f"Host: {'Yes' if is_host_year else 'No'}")
+            else:
+                st.caption("Select a year to focus.")
+
+        with col_chart:
+            fig_parcoords = create_parallel_coordinates_chart(medals_only, host_data, h_noc, focus_year_val)
+            if fig_parcoords:
+                st.plotly_chart(fig_parcoords, width='stretch')
