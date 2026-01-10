@@ -12,7 +12,8 @@
       <change beforePath="$PROJECT_DIR$/data_loader.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_loader.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/data_processor.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_processor.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/global_overview.py" beforeDir="false" afterPath="$PROJECT_DIR$/global_overview.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/population_by_year_2014_2024.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/host_advantage_data.csv" beforeDir="false" afterPath="$PROJECT_DIR$/host_advantage_data.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/wellness_winning.py" beforeDir="false" afterPath="$PROJECT_DIR$/wellness_winning.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -29,18 +30,6 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "BarFeigenberg"
-  }
-}]]></component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/BosmatGazith/Olympic.git",
-    "accountId": "04d1dabf-1e3d-4368-8e1b-7a65221dcbde"
-  }
-}]]></component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 5
 }</component>
@@ -98,17 +87,6 @@
     </task>
     <option name="localTasksCounter" value="2" />
     <servers />
-  </component>
-  <component name="Vcs.Log.Tabs.Properties">
-    <option name="TAB_STATES">
-      <map>
-        <entry key="MAIN">
-          <value>
-            <State />
-          </value>
-        </entry>
-      </map>
-    </option>
   </component>
   <component name="VcsManagerConfiguration">
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
