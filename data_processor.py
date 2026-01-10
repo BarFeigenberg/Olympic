@@ -250,6 +250,22 @@ def get_name_map():
     return dict(zip(df['noc'], df['country']))
 
 
+@st.cache_data
+def get_all_world_countries():
+    """Get all world country names from continent_data.csv with standardized names"""
+    df = load_raw_continent_data()
+    if df.empty:
+        return []
+
+    df.columns = df.columns.str.lower()
+    countries = df['name'].dropna().unique().tolist()
+
+    # Apply our name standardizations
+    standardized = [country_names_to_change.get(c, c) for c in countries]
+
+    return list(set(standardized))
+
+
 def get_continent_mapping():
     df = load_raw_continent_data()
     if df.empty: return {}
