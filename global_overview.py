@@ -7,7 +7,8 @@ import pandas as pd
 from data_processor import (
     get_processed_country_data,
     get_combined_population_data,
-    calculate_medals_per_million
+    calculate_medals_per_million,
+    get_all_world_countries
 )
 
 
@@ -16,22 +17,24 @@ def show_global_overview(medals_only, total_medals_per_country, country_list, me
     st.divider()
 
     # --- 1. Data Preparation for Map & Global Stats ---
-    # Load the processed population data
     pop_df = get_combined_population_data()
-
-    # For the static map, get LATEST known population per country
     latest_pop = pop_df.sort_values('year').groupby('country').tail(1)[['country', 'population']]
 
-    # Prepare Map Data
-    map_df = total_medals_per_country.copy()
+    # Prepare Map Data - start with ALL countries from continent_data.csv
+    all_countries = get_all_world_countries()
+    all_countries_df = pd.DataFrame({'country': all_countries})
+    map_df = all_countries_df.merge(total_medals_per_country, on='country', how='left')
 
-    # Fix: Ensure 'medals' column exists for the calculator
-    if 'total' in map_df.columns and 'medals' not in map_df.columns:
+    # Fill missing values for countries without medals
+    map_df['total'] = map_df['total'].fillna(0).astype(int)
+    if 'medals' not in map_df.columns:
         map_df['medals'] = map_df['total']
+    map_df['medals'] = map_df['medals'].fillna(0).astype(int)
 
-    # Merge total medals with latest population
+    # Merge with population
     map_df = map_df.merge(latest_pop, on='country', how='left')
     map_df = calculate_medals_per_million(map_df)
+    map_df['medals_per_million'] = map_df['medals_per_million'].fillna(0)
 
     # --- ROW 1: CONTROLS & METRICS ---
     col_select, col_metrics = st.columns([1, 3], gap="medium")
@@ -67,8 +70,10 @@ def show_global_overview(medals_only, total_medals_per_country, country_list, me
         best_year = country_df['year'].mode()[0] if not country_df.empty else "N/A"
 
         # Get Top 3 Sports
-        top_sports = country_df.groupby('sport')['medal'].count().reset_index().sort_values('medal', ascending=False).head(3).reset_index(drop=True)
-        
+        top_sports = country_df.groupby('sport')['medal'].count().reset_index().sort_values('medal',
+                                                                                            ascending=False).head(
+            3).reset_index(drop=True)
+
         # Build top sports text with medal colors
         if len(top_sports) >= 1:
             medals_info = [("🥇", "#FFD700"), ("🥈", "#A8A8A8"), ("🥉", "#CD7F32")]
@@ -80,14 +85,16 @@ def show_global_overview(medals_only, total_medals_per_country, country_list, me
             top_sports_html = " • ".join(sport_parts)
         else:
             top_sports_html = "N/A"
-        
+
         # Display metrics in a row: Total Medals | Best Year | Top Sports
         m1, m2, m3 = st.columns([1, 1, 2])
         m1.metric("🏅 Total Medals", total)
         m2.metric("📅 Best Year", str(best_year))
         with m3:
-            st.markdown("""<div style="font-size: 14px; color: #555; margin-bottom: 4px;">🏆 Top Sports</div>""", unsafe_allow_html=True)
-            st.markdown(f"""<div style="font-size: 16px; line-height: 1.8;">{top_sports_html}</div>""", unsafe_allow_html=True)
+            st.markdown("""<div style="font-size: 14px; color: #555; margin-bottom: 4px;">🏆 Top Sports</div>""",
+                        unsafe_allow_html=True)
+            st.markdown(f"""<div style="font-size: 16px; line-height: 1.8;">{top_sports_html}</div>""",
+                        unsafe_allow_html=True)
 
     st.divider()
 
@@ -123,16 +130,26 @@ def show_global_overview(medals_only, total_medals_per_country, country_list, me
         projection="natural earth"
     )
 
+    # Highlight selected country with blue border (not solid black)
     sel_data = map_viz_df[map_viz_df['country'] == st.session_state.selected_country]
     if not sel_data.empty:
         fig_map.add_trace(go.Choropleth(
             locations=sel_data['country'],
             locationmode="country names",
-            z=[1], colorscale=[[0, 'black'], [1, 'black']],
-            showscale=False, hoverinfo="skip", marker_line_color='black', marker_line_width=2
+            z=[1],
+            colorscale=[[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0)']],  # Transparent fill
+            showscale=False,
+            hoverinfo="skip",
+            marker_line_color='#2196F3',  # Blue border
+            marker_line_width=3
         ))
 
-    fig_map.update_geos(showocean=True, oceancolor="#E0F7FA", showland=True, landcolor="#F5F5F5")
+    # Show ALL countries with borders
+    fig_map.update_geos(
+        showocean=True, oceancolor="#E0F7FA",
+        showland=True, landcolor="#F5F5F5",
+        showcountries=True, countrycolor="#AAAAAA", countrywidth=0.5
+    )
     fig_map.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, height=500, clickmode="event", dragmode="pan",
                           legend_title_text="Medals per 1M")
 
