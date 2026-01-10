@@ -70,9 +70,9 @@ def load_historical_population_data():
 @st.cache_data
 def load_2024_population_data():
     try:
-        # Simple CSV with Country and Population columns
-        return pd.read_csv('population2024.xls.csv')
-    except FileNotFoundError:
+        # File is actually a Tab-Separated Values (TSV) file despite .xls extension
+        return pd.read_csv('population2024.xls', sep='\t', thousands=',', encoding='latin-1')
+    except (FileNotFoundError, pd.errors.ParserError):
         return pd.DataFrame()
 
 @st.cache_data

@@ -33,13 +33,42 @@ def show_athletics_deep_dive(athletics_df):
     print("Check 1")
     # Data Cleaning
     athletics_df.columns = athletics_df.columns.str.lower()
-    print(athletics_df.columns)
-    print("Check 2")
     athletics_df = athletics_df.rename(columns={'numericresult': 'numeric_result'})
-    print(athletics_df.columns)
-    print("Check 3")
+
+    # Filter out embedded header rows (where year is 'Year')
+    if 'year' in athletics_df.columns:
+        athletics_df = athletics_df[pd.to_numeric(athletics_df['year'], errors='coerce').notna()]
+        athletics_df['year'] = athletics_df['year'].astype(int)
+
     if 'event' in athletics_df.columns:
+        # Standardize: UPPERCASE
         athletics_df['event'] = athletics_df['event'].astype(str).str.strip().str.upper()
+    # Remove Gender Suffixes to merge "100M Men" and "100m" -> "100M"
+        athletics_df['event'] = athletics_df['event'].str.replace(' MEN', '', regex=False)
+        athletics_df['event'] = athletics_df['event'].str.replace(' WOMEN', '', regex=False)
+        # Handle '100M' vs '100 M' spacing if any
+        athletics_df['event'] = athletics_df['event'].str.strip()
+
+    # Filter out rows with no results BEFORE creating the event list
+    athletics_df = athletics_df.dropna(subset=['numeric_result'])
+
+    # Filter out events with only 1 result (sparse data, e.g. '10 MILE RACE WALK')
+    if not athletics_df.empty:
+        # 1. Explicit exclusion of known problematic/historical events
+        exclude_keywords = ['10 MILE', '5 MILES', '3KM WALK', '3500M WALK', 'STANDING', '10KM', '80M HURDLES']
+        athletics_df = athletics_df[~athletics_df['event'].str.contains('|'.join(exclude_keywords), case=False, na=False)]
+
+        # 2. Minimum data count threshold (Increased to 5 to be safer)
+        event_counts = athletics_df['event'].value_counts()
+        valid_events = event_counts[event_counts >= 5].index
+        athletics_df = athletics_df[athletics_df['event'].isin(valid_events)]
+
+        # 3. Filter out events that ended before 1950 (Archived/Discontinued events)
+        if not athletics_df.empty:
+            event_max_years = athletics_df.groupby('event')['year'].max()
+            modern_events = event_max_years[event_max_years > 1950].index
+            athletics_df = athletics_df[athletics_df['event'].isin(modern_events)]
+
     athletics_df['gender'] = athletics_df['gender'].astype(str).str.strip().str.upper()
     events = sorted(athletics_df['event'].unique().tolist())
     print("Check 4")

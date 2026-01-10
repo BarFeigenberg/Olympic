@@ -368,6 +368,8 @@ def get_continent_mapping():
 @st.cache_data
 def get_processed_athletics_data():
     df = load_raw_athletics_data()
+    # Normalize columns to lowercase immediately to match 'result', 'event', 'nationality' keys used below
+    df.columns = df.columns.str.lower()
 
     df.drop(columns=['extra'], inplace=True, errors='ignore')
     ref = get_name_map()
@@ -732,6 +734,62 @@ def calculate_medals_per_million(df):
     df['medals_per_million'] = (df['medals'] / (df['population'] / 1_000_000))
 
     return df
+
+
+@st.cache_data
+def get_combined_population_data():
+    # 1. Load Historical Data
+    hist_df = load_historical_population_data()
+    if not hist_df.empty:
+        # Expected cols: Entity, Code, Year, Population (historical)
+        # Rename to standard
+        hist_df = hist_df.rename(columns={
+            'Entity': 'country',
+            'Year': 'year',
+            'Population (historical)': 'population'
+        })
+        hist_df = hist_df[['country', 'year', 'population']]
+    
+    # 2. Load 2024 Data
+    df_2024 = load_2024_population_data()
+    processed_2024 = []
+    
+    if not df_2024.empty:
+        # Check standard columns from WEO file
+        # 'Country', 'Scale', '2024'
+        if 'Country' in df_2024.columns and '2024' in df_2024.columns:
+            # Create a copy to match standard structure
+            temp = df_2024[['Country', 'Scale', '2024']].copy()
+            temp = temp.rename(columns={'Country': 'country'})
+            
+            # Handle Scaling (Millions)
+            # Ensure '2024' is numeric
+            temp['2024'] = pd.to_numeric(temp['2024'], errors='coerce')
+            
+            def scale_pop(row):
+                val = row['2024']
+                scale = str(row['Scale']).lower()
+                if pd.isna(val):
+                    return 0
+                if 'million' in scale:
+                    return val * 1_000_000
+                return val
+            
+            temp['population'] = temp.apply(scale_pop, axis=1)
+            temp['year'] = 2024
+            
+            processed_2024 = temp[['country', 'year', 'population']]
+    
+    # 3. Combine
+    if hist_df.empty and isinstance(processed_2024, list):
+         return pd.DataFrame()
+    
+    if isinstance(processed_2024, pd.DataFrame) and not processed_2024.empty:
+        combined = pd.concat([hist_df, processed_2024], ignore_index=True)
+    else:
+        combined = hist_df
+        
+    return combined
 
 
 @st.cache_data
