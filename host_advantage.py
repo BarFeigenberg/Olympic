@@ -2,6 +2,244 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import numpy as np
+
+from data_processor import get_medals_by_sport_category, CATEGORY_ORDER
+
+
+def create_host_radar_chart(medals_only, host_data, h_noc, h_year, view_mode="All"):
+    """
+    Create a radar chart showing medal distribution by sport category.
+    Normalizes each category to its own max for better visualization.
+    """
+    if medals_only.empty:
+        return None
+    
+    # Get all years for this country
+    country_years = sorted(medals_only[medals_only['noc'] == h_noc]['year'].unique())
+    
+    if not country_years:
+        return None
+    
+    # Split into past, current, future
+    past_years = [y for y in country_years if y < h_year]
+    future_years = [y for y in country_years if y > h_year]
+    current_year = h_year if h_year in country_years else None
+    
+    # Get host years for this country
+    host_years_for_country = set()
+    if not host_data.empty and h_noc:
+        host_years_for_country = set(host_data[host_data['host_noc'] == h_noc]['year'].tolist())
+    
+    categories = CATEGORY_ORDER
+    
+    # Calculate MAX per category across all years (for normalization)
+    max_per_category = {cat: 1 for cat in categories}  # Start with 1 to avoid division by 0
+    for year in country_years:
+        cat_medals = get_medals_by_sport_category(medals_only, h_noc, year)
+        for cat in categories:
+            max_per_category[cat] = max(max_per_category[cat], cat_medals.get(cat, 0) + 1)
+    
+    def normalize_values(raw_values):
+        """Normalize values to 0-100 scale based on each category's max"""
+        return [100 * raw_values.get(cat, 0) / max_per_category[cat] for cat in categories]
+    
+    fig = go.Figure()
+    
+    # --- PAST EVENTS (Burgundy thin lines, Gold for host years) ---
+    # Different BRONZE/COPPER shades for other host events (to distinguish from current GOLD)
+    bronze_shades = ['rgba(205, 127, 50, 0.8)',   # Bronze
+                     'rgba(184, 115, 51, 0.8)',   # Copper
+                     'rgba(210, 105, 30, 0.8)',   # Chocolate
+                     'rgba(184, 134, 11, 0.8)']   # Dark Goldenrod
+    host_count = 0
+    
+    # Track if we've added the first past year (for legend)
+    first_past_year = True
+    first_host_year = True
+    
+    if view_mode in ["Past + Current", "All"] and past_years:
+        for year in past_years:
+            is_host_year = year in host_years_for_country
+                
+            cat_medals = get_medals_by_sport_category(medals_only, h_noc, year)
+            values = normalize_values(cat_medals)
+            values.append(values[0])  # Close the radar
+            
+            if is_host_year:
+                line_color = bronze_shades[host_count % len(bronze_shades)]
+                line_width = 3  # Thicker for host
+                host_count += 1
+            else:
+                line_color = 'rgba(139, 0, 0, 0.2)'  # Burgundy, more transparent
+                line_width = 1  # Thinnest possible
+            
+            # Build custom hover data
+            raw = [cat_medals.get(cat, 0) for cat in categories]
+            
+            # Determine legend group and name for Host vs Past
+            if is_host_year:
+                trace_name = 'Other Host Years' if first_host_year else f'{year} (Host)'
+                grp = 'host_years'
+                show_leg = first_host_year  # Only show specific legend item once
+                first_host_year = False
+                vis = True
+            else:
+                trace_name = 'Past Years' if first_past_year else f'{year}'
+                grp = 'past_years'
+                show_leg = first_past_year
+                first_past_year = False
+                vis = True
+
+            fig.add_trace(go.Scatterpolar(
+                r=values,
+                theta=categories + [categories[0]],
+                mode='lines',
+                name=trace_name,
+                legendgroup=grp,
+                line=dict(color=line_color, width=line_width),
+                customdata=raw + [raw[0]],
+                hovertemplate=f"<b>{year}</b><br>%{{theta}}: %{{customdata}} medals<extra></extra>",
+                showlegend=show_leg,
+                visible=vis
+            ))
+        
+        # Past Average (Dark Red line)
+        if len(past_years) >= 1:
+            avg_raw = {cat: 0 for cat in categories}
+            for year in past_years:
+                cat_medals = get_medals_by_sport_category(medals_only, h_noc, year)
+                for cat in categories:
+                    avg_raw[cat] += cat_medals.get(cat, 0)
+            avg_raw = {cat: v / len(past_years) for cat, v in avg_raw.items()}
+            
+            values = normalize_values(avg_raw)
+            values.append(values[0])
+            raw = [avg_raw[cat] for cat in categories]
+            
+            fig.add_trace(go.Scatterpolar(
+                r=values,
+                theta=categories + [categories[0]],
+                mode='lines',
+                name='Past Average',
+                line=dict(color='#B22222', width=5),  # FireBrick red, thick
+                customdata=raw + [raw[0]],
+                hovertemplate="<b>Past Average</b><br>%{theta}: %{customdata:.1f} medals<extra></extra>",
+                showlegend=True
+            ))
+    
+    # --- FUTURE EVENTS (Green thin lines) ---
+    first_future_year = True
+    if view_mode in ["Current + Future", "All"] and future_years:
+        for year in future_years:
+            cat_medals = get_medals_by_sport_category(medals_only, h_noc, year)
+            values = normalize_values(cat_medals)
+            values.append(values[0])
+            raw = [cat_medals.get(cat, 0) for cat in categories]
+            
+            fig.add_trace(go.Scatterpolar(
+                r=values,
+                theta=categories + [categories[0]],
+                mode='lines',
+                name='Future Years' if first_future_year else f'{year}',
+                legendgroup='future_years',
+                line=dict(color='rgba(50, 205, 50, 0.3)', width=1),  # More transparent, thinnest
+                customdata=raw + [raw[0]],
+                hovertemplate=f"<b>{year}</b><br>%{{theta}}: %{{customdata}} medals<extra></extra>",
+                showlegend=first_future_year,
+                visible=True
+            ))
+            first_future_year = False
+        
+        # Future Average (Green line)
+        if len(future_years) >= 1:
+            avg_raw = {cat: 0 for cat in categories}
+            for year in future_years:
+                cat_medals = get_medals_by_sport_category(medals_only, h_noc, year)
+                for cat in categories:
+                    avg_raw[cat] += cat_medals.get(cat, 0)
+            avg_raw = {cat: v / len(future_years) for cat, v in avg_raw.items()}
+            
+            values = normalize_values(avg_raw)
+            values.append(values[0])
+            raw = [avg_raw[cat] for cat in categories]
+            
+            fig.add_trace(go.Scatterpolar(
+                r=values,
+                theta=categories + [categories[0]],
+                mode='lines',
+                name='Future Average',
+                line=dict(color='#00C853', width=5),  # Emerald green, thick
+                customdata=raw + [raw[0]],
+                hovertemplate="<b>Future Average</b><br>%{theta}: %{customdata:.1f} medals<extra></extra>",
+                showlegend=True
+            ))
+    
+    # --- CURRENT EVENT (Gold, thickest line) ---
+    if current_year and view_mode in ["Past + Current", "Current + Future", "All"]:
+        cat_medals = get_medals_by_sport_category(medals_only, h_noc, current_year)
+        values = normalize_values(cat_medals)
+        values.append(values[0])
+        raw = [cat_medals.get(cat, 0) for cat in categories]
+        
+        is_host = current_year in host_years_for_country
+        name = f'{current_year} (Host)' if is_host else f'{current_year}'
+        
+        fig.add_trace(go.Scatterpolar(
+            r=values,
+            theta=categories + [categories[0]],
+            mode='lines+markers',
+            name=name,
+            line=dict(color='#FFD700', width=7),  # THICKEST (Increased to 7)
+            marker=dict(size=10, color='#FFD700'),
+            customdata=raw + [raw[0]],
+            hovertemplate=f"<b>{name}</b><br>%{{theta}}: %{{customdata}} medals<extra></extra>",
+            showlegend=True
+        ))
+    
+    # Layout - range is now 0-100 (normalized)
+    fig.update_layout(
+        polar=dict(
+            gridshape='linear',  # Polygon shape instead of circle!
+            radialaxis=dict(
+                visible=True,
+                showline=False,
+                gridcolor='rgba(0,0,0,0.15)',
+                range=[0, 105],
+                tickvals=[25, 50, 75, 100],
+                ticktext=['25%', '50%', '75%', 'Max'],
+                tickfont=dict(size=10, color="gray")
+            ),
+            angularaxis=dict(
+                gridcolor='rgba(0,0,0,0.3)',
+                tickfont=dict(size=14, color="black")
+            ),
+            hole=0.02
+        ),
+        showlegend=True,
+        legend=dict(
+            orientation="h",
+            yanchor="top",
+            y=-0.08,
+            xanchor="center",
+            x=0.5,
+            itemclick='toggle',
+            itemdoubleclick='toggleothers',
+            bgcolor='rgba(255,255,255,0.9)',
+            bordercolor='rgba(0,0,0,0.2)',
+            borderwidth=1,
+            font=dict(size=11),
+            itemsizing='constant',
+            tracegroupgap=5,
+            title=dict(text='💡 Click to toggle', font=dict(size=10))
+        ),
+        height=600,
+        margin=dict(t=20, b=20, l=35, r=35)  # Tight margins for bigger chart
+    )
+    
+    return fig
+
+
 
 
 def selection_dropdown(host_data, country_ref):
@@ -65,6 +303,84 @@ def show_host_advantage(host_data, medals_only, country_ref):
         h_noc = row['host_noc']
         h_medals = int(row['total_medals'])
         full_country_name = noc_map.get(h_noc, h_noc)
+
+    # --- RADAR CHART: Medal Distribution by Sport Category ---
+    if sel_event and h_noc and h_year:
+        st.subheader(f"🎯 Medal Distribution by Sport Category: {full_country_name} - {h_year}")
+
+        # --- PRE-CALCULATE KPIS FOR METRICS ---
+        country_history = medals_only[medals_only['noc'] == h_noc].groupby('year')['medal'].count().reset_index()
+        pre_years = country_history[(country_history['year'] < h_year) & (country_history['year'] >= h_year - 12)]
+        avg_pre = pre_years['medal'].mean() if not pre_years.empty else 0
+        diff = h_medals - avg_pre
+        boost_pct = (diff / avg_pre * 100) if avg_pre > 0 else 0
+
+        # --- CSS STYLING FOR METRICS (Card Style) ---
+        st.markdown("""
+                <style>
+                    /* Style the metric container */
+                    [data-testid="stMetric"] {
+                        background-color: white;
+                        border: 1px solid #dedede;
+                        padding: 10px;
+                        border-radius: 10px;
+                        color: black;
+                        box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+                        margin-bottom: 10px; /* Space between vertical cards */
+                    }
+                    /* Force label color */
+                    [data-testid="stMetricLabel"] p {
+                        color: #444 !important;
+                    }
+                    /* Force value color */
+                    [data-testid="stMetricValue"] div {
+                        color: black !important;
+                    }
+
+                    /* RADIO BUTTON SMALLER STYLE */
+                    div[role="radiogroup"] label p {
+                        font-size: 13px !important;
+                    }
+                    div[role="radiogroup"] {
+                        gap: 0px !important;
+                    }
+                </style>
+                """, unsafe_allow_html=True)
+        
+        # --- LAYOUT: [Chart 2/3] | [Metrics 1/3] ---
+        col_chart, col_metrics = st.columns([2, 1], gap="medium")
+
+        with col_chart:
+            # Top controls - just view mode
+            ctrl_col1, ctrl_col2 = st.columns([2, 1])
+            with ctrl_col1:
+                st.caption(f"Comparing {h_year} performance across sport categories")
+            with ctrl_col2:
+                view_mode = st.radio(
+                    "View Mode:",
+                    ["Past + Current", "Current + Future", "All"],
+                    horizontal=False,
+                    label_visibility="collapsed" # Save space
+                )
+            
+            # Create and display radar chart
+            radar_fig = create_host_radar_chart(medals_only, host_data, h_noc, h_year, view_mode)
+            if radar_fig:
+                st.plotly_chart(radar_fig, use_container_width=True)
+            else:
+                st.info("No medal data available for this selection.")
+
+        with col_metrics:
+            st.write("#### Performance Stats")
+            st.metric("🏅 Host Year Medals", h_medals)
+            st.metric("📊 Pre-Host Avg (12y)", f"{avg_pre:.1f}")
+            st.metric("📈 Net Gain", f"+{int(diff)}" if diff > 0 else int(diff))
+            
+            delta_color = "normal" if boost_pct > 0 else "off"
+            st.metric("🚀 Performance Boost", f"{boost_pct:.1f}%", delta=f"{boost_pct:.1f}%",
+                      delta_color=delta_color)
+        
+        st.divider()
 
     # --- 3. THE GLOBAL "BIG QUESTION" CHART ---
     st.subheader("🌍 The Big Picture: Does Hosting Pay Off?")
@@ -150,54 +466,9 @@ def show_host_advantage(host_data, medals_only, country_ref):
     # --- 4. DRILL DOWN (DEEP DIVE) ---
     if sel_event:
         st.subheader(f"🔍 Country Deep Dive: {full_country_name}")
-        country_history = medals_only[medals_only['noc'] == h_noc].groupby('year')['medal'].count().reset_index()
-
-        # KPI Calculations
-        pre_years = country_history[(country_history['year'] < h_year) & (country_history['year'] >= h_year - 12)]
-        avg_pre = pre_years['medal'].mean() if not pre_years.empty else 0
-
-        diff = h_medals - avg_pre
-        boost_pct = (diff / avg_pre * 100) if avg_pre > 0 else 0
-
-        # --- CSS STYLING FOR METRICS ---
-        st.markdown("""
-                <style>
-                    /* Style the metric container */
-                    [data-testid="stMetric"] {
-                        background-color: white;
-                        border: 1px solid #dedede;
-                        padding: 10px;
-                        border-radius: 10px;
-                        color: black;
-                        box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
-
-                        /* FORCE SAME HEIGHT */
-                        display: flex;       /* Use flexbox to center content vertically */
-                        flex-direction: column;
-                        justify-content: center; /* Center content vertically */
-                    }
-
-                    /* Force label color */
-                    [data-testid="stMetricLabel"] p {
-                        color: #444 !important;
-                    }
-
-                    /* Force value color */
-                    [data-testid="stMetricValue"] div {
-                        color: black !important;
-                    }
-                </style>
-                """, unsafe_allow_html=True)
-
-        with st.container(border=True):
-            k1, k2, k3, k4 = st.columns(4)
-            k1.metric("🏅 Host Year Medals", h_medals)
-            k2.metric("📊 Pre-Host Avg (12y)", f"{avg_pre:.1f}")
-            k3.metric("📈 Net Gain", f"+{int(diff)}" if diff > 0 else int(diff))
-            delta_color = "normal" if boost_pct > 0 else "off"
-            k4.metric("🚀 Performance Boost", f"{boost_pct:.1f}%", delta=f"{boost_pct:.1f}%",
-                      delta_color=delta_color)
-
+        
+        # (KPI Logic moved up)
+        
         st.divider()
 
         # --- Timeline Chart ---

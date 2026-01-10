@@ -1,8 +1,6 @@
 import os
 import numpy as np
-import pandas as pd
 import re
-import streamlit as st
 from data_loader import *
 
 # --- 1. Dictionaries for Name Standardization ---
@@ -55,7 +53,7 @@ country_names_to_change = {
     "Democratic Republic of the Congo": "Dem. Rep. Congo",
     "Congo, Democratic Republic of the": "Dem. Rep. Congo",
     "Congo, Republic of the": "Republic of Congo",
-    
+
     # --- FIX: Ensuring Full Names (No Abbreviations) ---
     "USSR": "Soviet Union",
     "UK": "United Kingdom",
@@ -89,6 +87,82 @@ country_NOC_to_change = {
     "FRG": "GER",
     "GDR": "GER"
 }
+
+# --- Sport Categories for Radar Chart (5 balanced categories) ---
+SPORT_CATEGORIES = {
+    # 🏃 Track & Field (~3300 medals)
+    "Athletics": "Track & Field",
+    
+    # 🏊 Swimming & Diving (~2500 medals)
+    "Swimming": "Swimming & Diving", "Diving": "Swimming & Diving", 
+    "Water Polo": "Swimming & Diving", "Artistic Swimming": "Swimming & Diving", 
+    "Synchronized Swimming": "Swimming & Diving", "Marathon Swimming": "Swimming & Diving", 
+    "Marathon Swimming, Swimming": "Swimming & Diving",
+    
+    # 🥊 Combat (~4000 medals)
+    "Wrestling": "Combat", "Boxing": "Combat", "Judo": "Combat",
+    "Fencing": "Combat", "Taekwondo": "Combat", "Karate": "Combat",
+    
+    # 🎯 Endurance & Precision (~6000 medals) - Cycling, rowing, shooting, gymnastics
+    "Cycling": "Endurance & Precision", "Cycling BMX Freestyle": "Endurance & Precision",
+    "Cycling BMX Racing": "Endurance & Precision", "Cycling Mountain Bike": "Endurance & Precision",
+    "Cycling Road": "Endurance & Precision", "Cycling Road, Cycling Mountain Bike": "Endurance & Precision",
+    "Cycling Road, Cycling Track": "Endurance & Precision", "Cycling Road, Triathlon": "Endurance & Precision",
+    "Cycling Track": "Endurance & Precision", "Triathlon": "Endurance & Precision",
+    "Rowing": "Endurance & Precision", "Canoeing": "Endurance & Precision",
+    "Canoe Slalom": "Endurance & Precision", "Canoe Sprint": "Endurance & Precision",
+    "Sailing": "Endurance & Precision", "Shooting": "Endurance & Precision", 
+    "Archery": "Endurance & Precision", "Weightlifting": "Endurance & Precision",
+    "Gymnastics": "Endurance & Precision", "Artistic Gymnastics": "Endurance & Precision",
+    "Rhythmic Gymnastics": "Endurance & Precision", "Trampoline Gymnastics": "Endurance & Precision",
+    "Trampolining": "Endurance & Precision", "Modern Pentathlon": "Endurance & Precision",
+    
+    # ⚽ Games (~2000 medals) - Ball and court sports
+    "Basketball": "Games", "3x3 Basketball": "Games",
+    "3x3 Basketball, Basketball": "Games", "Volleyball": "Games",
+    "Beach Volleyball": "Games", "Handball": "Games",
+    "Football": "Games", "Hockey": "Games", "Rugby": "Games",
+    "Rugby Sevens": "Games", "Baseball": "Games", "Softball": "Games",
+    "Baseball/Softball": "Games", "Cricket": "Games", "Lacrosse": "Games",
+    "Polo": "Games", "Tennis": "Games", "Badminton": "Games",
+    "Table Tennis": "Games", "Basque Pelota": "Games",
+    "Racquets": "Games", "Jeu De Paume": "Games", "Golf": "Games",
+    "Equestrian": "Games", "Equestrianism": "Games",
+    "Skateboarding": "Games", "Sport Climbing": "Games", 
+    "Surfing": "Games", "Breaking": "Games",
+    "Figure Skating": "Games", "Ice Hockey": "Games",
+    "Art Competitions": "Games", "Aeronautics": "Games", "Alpinism": "Games",
+    "Croquet": "Games", "Roque": "Games", "Tug-Of-War": "Games",
+    "Motorboating": "Games"
+}
+
+CATEGORY_ORDER = ["Track & Field", "Swimming & Diving", "Combat",
+                  "Endurance & Precision", "Games"]
+
+
+def get_sport_category(sport_name):
+    """Get category for a sport name"""
+    if pd.isna(sport_name):
+        return "Other"
+    return SPORT_CATEGORIES.get(sport_name, "Other")
+
+
+def get_medals_by_sport_category(medals_df, noc, year=None):
+    """Aggregate medals by sport category for a country. Uses pre-deduplicated medals_df."""
+    if medals_df.empty:
+        return {cat: 0 for cat in CATEGORY_ORDER}
+    
+    df = medals_df[medals_df['noc'] == noc].copy()
+    if year is not None:
+        df = df[df['year'] == year]
+    
+    if df.empty:
+        return {cat: 0 for cat in CATEGORY_ORDER}
+    
+    df['category'] = df['sport'].apply(get_sport_category)
+    counts = df.groupby('category').size().to_dict()
+    
+    return {cat: counts.get(cat, 0) for cat in CATEGORY_ORDER}
 
 
 # --- 2. Host Advantage Processor ---
@@ -246,7 +320,8 @@ def get_processed_main_data():
 
 def get_name_map():
     df = get_processed_country_data()
-    if df.empty: return {}
+    if df.empty:
+        return {}
     return dict(zip(df['noc'], df['country']))
 
 
@@ -276,9 +351,95 @@ def get_continent_mapping():
 @st.cache_data
 def get_processed_athletics_data():
     df = load_raw_athletics_data()
-    if df.empty: return pd.DataFrame()
 
-    df.columns = df.columns.str.lower()
+    meet_records = [
+        {'gender': 'M', 'event': '100M', 'location': 'London', 'year': 2012, 'medal': 'G', 'name': 'Usain Bolt',
+         'nationality': 'JAM', 'result': '9.63'},
+        {'gender': 'M', 'event': '200M', 'location': 'Beijing', 'year': 2008, 'medal': 'G', 'name': 'Usain Bolt',
+         'nationality': 'JAM', 'result': '19.30'},
+        {'gender': 'M', 'event': '400M', 'location': 'Rio', 'year': 2016, 'medal': 'G', 'name': 'Wayde van Niekerk',
+         'nationality': 'RSA', 'result': '43.03'},
+        {'gender': 'M', 'event': '800M', 'location': 'Paris', 'year': 2024, 'medal': 'G', 'name': 'Emmanuel Wanyonyi',
+         'nationality': 'KEN', 'result': '1:41.19'},
+        {'gender': 'M', 'event': '1500M', 'location': 'Paris', 'year': 2024, 'medal': 'G', 'name': 'Cole Hocker',
+         'nationality': 'USA', 'result': '3:27.65'},
+        {'gender': 'M', 'event': '3000M Steeplechase', 'location': 'Rio', 'year': 2016, 'medal': 'G',
+         'name': 'Conseslus Kipruto', 'nationality': 'KEN', 'result': '8:03.28'},
+        {'gender': 'M', 'event': '5000M', 'location': 'Beijing', 'year': 2008, 'medal': 'G', 'name': 'Kenenisa Bekele',
+         'nationality': 'ETH', 'result': '12:57.82'},
+        {'gender': 'M', 'event': '10,000M', 'location': 'Paris', 'year': 2024, 'medal': 'G', 'name': 'Joshua Cheptegei',
+         'nationality': 'UGA', 'result': '26:43.14'},
+        {'gender': 'M', 'event': '110M Hurdles', 'location': 'Athens', 'year': 2004, 'medal': 'G', 'name': 'Xiang Liu',
+         'nationality': 'CHN', 'result': '12.91'},
+        {'gender': 'M', 'event': '400M Hurdles', 'location': 'Tokyo', 'year': 2020, 'medal': 'G',
+         'name': 'Karsten Warholm', 'nationality': 'NOR', 'result': '45.94'},
+        {'gender': 'M', 'event': 'High Jump', 'location': 'Atlanta', 'year': 1996, 'medal': 'G',
+         'name': 'Charles Austin', 'nationality': 'USA', 'result': '2.39'},
+        {'gender': 'M', 'event': 'Pole Vault', 'location': 'Paris', 'year': 2024, 'medal': 'G',
+         'name': 'Mondo Duplantis', 'nationality': 'SWE', 'result': '6.25'},
+        {'gender': 'M', 'event': 'Long Jump', 'location': 'Mexico City', 'year': 1968, 'medal': 'G',
+         'name': 'Bob Beamon', 'nationality': 'USA', 'result': '8.90'},
+        {'gender': 'M', 'event': 'Triple Jump', 'location': 'Atlanta', 'year': 1996, 'medal': 'G',
+         'name': 'Kenny Harrison', 'nationality': 'USA', 'result': '18.09'},
+        {'gender': 'M', 'event': 'Shot Put', 'location': 'Tokyo', 'year': 2020, 'medal': 'G', 'name': 'Ryan Crouser',
+         'nationality': 'USA', 'result': '23.30'},
+        {'gender': 'M', 'event': 'Discus Throw', 'location': 'Paris', 'year': 2024, 'medal': 'G', 'name': 'Roje Stona',
+         'nationality': 'JAM', 'result': '70.00'},
+        {'gender': 'M', 'event': 'Hammer Throw', 'location': 'Seoul', 'year': 1988, 'medal': 'G',
+         'name': 'Sergey Litvinov', 'nationality': 'URS', 'result': '84.80'},
+        {'gender': 'M', 'event': 'Javelin Throw', 'location': 'Paris', 'year': 2024, 'medal': 'G',
+         'name': 'Arshad Nadeem', 'nationality': 'PAK', 'result': '92.97'},
+        {'gender': 'M', 'event': 'Decathlon', 'location': 'Tokyo', 'year': 2020, 'medal': 'G', 'name': 'Damian Warner',
+         'nationality': 'CAN', 'result': '9018'},
+        {'gender': 'W', 'event': '100M', 'location': 'Tokyo', 'year': 2020, 'medal': 'G',
+         'name': 'Elaine Thompson-Herah', 'nationality': 'JAM', 'result': '10.61'},
+        {'gender': 'W', 'event': '200M', 'location': 'Seoul', 'year': 1988, 'medal': 'G',
+         'name': 'Florence Griffith Joyner', 'nationality': 'USA', 'result': '21.34'},
+        {'gender': 'W', 'event': '400M', 'location': 'Paris', 'year': 2024, 'medal': 'G', 'name': 'Marileidy Paulino',
+         'nationality': 'DOM', 'result': '48.17'},
+        {'gender': 'W', 'event': '800M', 'location': 'Moscow', 'year': 1980, 'medal': 'G',
+         'name': 'Nadezhda Olizarenko', 'nationality': 'URS', 'result': '1:53.43'},
+        {'gender': 'W', 'event': '1500M', 'location': 'Paris', 'year': 2024, 'medal': 'G', 'name': 'Faith Kipyegon',
+         'nationality': 'KEN', 'result': '3:51.29'},
+        {'gender': 'W', 'event': '3000M Steeplechase', 'location': 'Paris', 'year': 2024, 'medal': 'G',
+         'name': 'Winfred Yavi', 'nationality': 'BRN', 'result': '8:52.76'},
+        {'gender': 'W', 'event': '5000M', 'location': 'Rio', 'year': 2016, 'medal': 'G', 'name': 'Vivian Cheruiyot',
+         'nationality': 'KEN', 'result': '14:26.17'},
+        {'gender': 'W', 'event': '10,000M', 'location': 'Rio', 'year': 2016, 'medal': 'G', 'name': 'Almaz Ayana',
+         'nationality': 'ETH', 'result': '29:17.45'},
+        {'gender': 'W', 'event': '100M Hurdles', 'location': 'Tokyo', 'year': 2020, 'medal': 'G',
+         'name': 'Jasmine Camacho-Quinn', 'nationality': 'PUR', 'result': '12.26'},
+        {'gender': 'W', 'event': '400M Hurdles', 'location': 'Paris', 'year': 2024, 'medal': 'G',
+         'name': 'Sydney McLaughlin-Levrone', 'nationality': 'USA', 'result': '50.37'},
+        {'gender': 'W', 'event': 'High Jump', 'location': 'Athens', 'year': 2004, 'medal': 'G',
+         'name': 'Yelena Slesarenko', 'nationality': 'RUS', 'result': '2.06'},
+        {'gender': 'W', 'event': 'Pole Vault', 'location': 'Beijing', 'year': 2008, 'medal': 'G',
+         'name': 'Yelena Isinbaeva', 'nationality': 'RUS', 'result': '5.05'},
+        {'gender': 'W', 'event': 'Long Jump', 'location': 'Seoul', 'year': 1988, 'medal': 'G',
+         'name': 'Jackie Joyner-Kersee', 'nationality': 'USA', 'result': '7.40'},
+        {'gender': 'W', 'event': 'Triple Jump', 'location': 'Tokyo', 'year': 2020, 'medal': 'G',
+         'name': 'Yulimar Rojas', 'nationality': 'VEN', 'result': '15.67'},
+        {'gender': 'W', 'event': 'Shot Put', 'location': 'Moscow', 'year': 1980, 'medal': 'G',
+         'name': 'Ilona Slupianek', 'nationality': 'GDR', 'result': '22.41'},
+        {'gender': 'W', 'event': 'Discus Throw', 'location': 'Seoul', 'year': 1988, 'medal': 'G',
+         'name': 'Martina Hellmann', 'nationality': 'GDR', 'result': '72.30'},
+        {'gender': 'W', 'event': 'Hammer Throw', 'location': 'Rio', 'year': 2016, 'medal': 'G',
+         'name': 'Anita Włodarczyk', 'nationality': 'POL', 'result': '82.29'},
+        {'gender': 'W', 'event': 'Javelin Throw', 'location': 'Athens', 'year': 2004, 'medal': 'G',
+         'name': 'Osleidys Menéndez', 'nationality': 'CUB', 'result': '71.53'},
+        {'gender': 'W', 'event': 'Heptathlon', 'location': 'Seoul', 'year': 1988, 'medal': 'G',
+         'name': 'Jackie Joyner-Kersee', 'nationality': 'USA', 'result': '7291'}
+    ]
+
+    records_df = pd.DataFrame(meet_records)
+
+    if df.empty:
+        df = records_df
+    else:
+        df.columns = df.columns.str.lower()
+        df = pd.concat([df, records_df], ignore_index=True)
+
+    df = df.drop_duplicates(subset=['gender', 'event', 'year', 'result'], keep='last')
 
     df.drop(columns=['extra'], inplace=True, errors='ignore')
     ref = get_name_map()
