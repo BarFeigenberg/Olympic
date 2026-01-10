@@ -67,8 +67,10 @@ def show_global_overview(medals_only, total_medals_per_country, country_list, me
         best_year = country_df['year'].mode()[0] if not country_df.empty else "N/A"
 
         # Get Top 3 Sports
-        top_sports = country_df.groupby('sport')['medal'].count().reset_index().sort_values('medal', ascending=False).head(3).reset_index(drop=True)
-        
+        top_sports = country_df.groupby('sport')['medal'].count().reset_index().sort_values('medal',
+                                                                                            ascending=False).head(
+            3).reset_index(drop=True)
+
         # Build top sports text with medal colors
         if len(top_sports) >= 1:
             medals_info = [("🥇", "#FFD700"), ("🥈", "#A8A8A8"), ("🥉", "#CD7F32")]
@@ -80,14 +82,16 @@ def show_global_overview(medals_only, total_medals_per_country, country_list, me
             top_sports_html = " • ".join(sport_parts)
         else:
             top_sports_html = "N/A"
-        
+
         # Display metrics in a row: Total Medals | Best Year | Top Sports
         m1, m2, m3 = st.columns([1, 1, 2])
         m1.metric("🏅 Total Medals", total)
         m2.metric("📅 Best Year", str(best_year))
         with m3:
-            st.markdown("""<div style="font-size: 14px; color: #555; margin-bottom: 4px;">🏆 Top Sports</div>""", unsafe_allow_html=True)
-            st.markdown(f"""<div style="font-size: 16px; line-height: 1.8;">{top_sports_html}</div>""", unsafe_allow_html=True)
+            st.markdown("""<div style="font-size: 14px; color: #555; margin-bottom: 4px;">🏆 Top Sports</div>""",
+                        unsafe_allow_html=True)
+            st.markdown(f"""<div style="font-size: 16px; line-height: 1.8;">{top_sports_html}</div>""",
+                        unsafe_allow_html=True)
 
     st.divider()
 
