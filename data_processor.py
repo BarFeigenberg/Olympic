@@ -41,7 +41,7 @@ country_names_to_change = {
     "United States Virgin Islands": "US Virgin Islands",
     "West Indies Federation": "West Indies",
 
-    # --- FIX: Plotly Choropleth Compatibility ---
+    # Plotly Choropleth Compatibility ---
     "The Bahamas": "Bahamas",
     "Czechia": "Czech Republic",
     "Cabo Verde": "Cape Verde",
@@ -139,18 +139,18 @@ SPORT_CATEGORIES = {
     "Weightlifting": "Strength & Weight 🏋️", "Tug-Of-War": "Strength & Weight 🏋️",
 
     # 🧗 General Sport
-    "Triathlon": "Misc & Modern 🧗", "Modern Pentathlon": "Misc & Modern 🧗",
-    "Equestrian": "Misc & Modern 🧗", "Equestrianism": "Misc & Modern 🧗",
-    "Skateboarding": "Misc & Modern 🧗", "Sport Climbing": "Misc & Modern 🧗",
-    "Breaking": "Misc & Modern 🧗", "Figure Skating": "Misc & Modern 🧗",
-    "Art Competitions": "Misc & Modern 🧗", "Aeronautics": "Misc & Modern 🧗",
-    "Alpinism": "Misc & Modern 🧗", "Croquet": "Misc & Modern 🧗", "Roque": "Misc & Modern 🧗"
+    "Triathlon": "General Sport 🧗", "Modern Pentathlon": "General Sport 🧗",
+    "Equestrian": "General Sport 🧗", "Equestrianism": "General Sport 🧗",
+    "Skateboarding": "General Sport 🧗", "Sport Climbing": "General Sport 🧗",
+    "Breaking": "General Sport 🧗", "Figure Skating": "General Sport 🧗",
+    "Art Competitions": "General Sport 🧗", "Aeronautics": "General Sport 🧗",
+    "Alpinism": "General Sport 🧗", "Croquet": "General Sport 🧗", "Roque": "General Sport 🧗"
 }
 
 CATEGORY_ORDER = [
     "Athletics 🏃", "Aquatics 🏊", "Gymnastics 🤸", "Combat Sports 🥋",
     "Ball Games ⚽", "Racquet Sports🏸", "Cycling 🚴", "Water Sports 🚣",
-    "Target Sports 🎯", "️Strength & Weight 🏋", "Misc & Modern 🧗"
+    "Target Sports 🎯", "️Strength & Weight 🏋", "General Sport 🧗"
 ]
 
 
@@ -414,7 +414,8 @@ def get_processed_medals_data():
     df_paris_medals = load_raw_paris_data()
     countries = get_processed_country_data()
 
-    if df_medals.empty: return pd.DataFrame()
+    if df_medals.empty:
+        return pd.DataFrame()
 
     df_medals.columns = df_medals.columns.str.lower()
     if not df_paris_medals.empty:
@@ -468,168 +469,58 @@ def get_processed_medals_data():
 # --- 4. Population Processor ---
 @st.cache_data
 def get_combined_population_data():
-    """
-    Merges historical population data with a specific 2024 update file.
-    - Historical data is used for years < 2024.
-    - New file is used EXCLUSIVELY for 2024.
-    """
-    # Load raw datasets
-    hist_pop = load_historical_population_data()
-    curr_pop = load_2024_population_data()
+    # 1. Load Historical Data
+    hist_df = load_historical_population_data()
+    if not hist_df.empty:
+        # Expected cols: Entity, Code, Year, Population (historical)
+        # Rename to standard
+        hist_df = hist_df.rename(columns={
+            'Entity': 'country',
+            'Year': 'year',
+            'Population (historical)': 'population'
+        })
+        hist_df = hist_df[['country', 'year', 'population']]
 
-    # --- 1. Process Historical Data ---
-    if hist_pop.empty:
-        # If historical data is missing, create an empty structure
-        combined_df = pd.DataFrame(columns=['country', 'year', 'population', 'iso'])
-    else:
-        # Normalize column names
-        hist_pop.columns = hist_pop.columns.str.lower().str.strip()
+    # 2. Load 2024 Data
+    df_2024 = load_2024_population_data()
+    processed_2024 = []
 
-        # Rename columns to standard format
-        rename_dict = {}
-        if 'entity' in hist_pop.columns: rename_dict['entity'] = 'country'
-        if 'code' in hist_pop.columns: rename_dict['code'] = 'iso'
+    if not df_2024.empty:
+        # Check standard columns from WEO file
+        # 'Country', 'Scale', '2024'
+        if 'Country' in df_2024.columns and '2024' in df_2024.columns:
+            # Create a copy to match standard structure
+            temp = df_2024[['Country', 'Scale', '2024']].copy()
+            temp = temp.rename(columns={'Country': 'country'})
 
-        # Identify population column in historical data
-        pop_col = next((c for c in hist_pop.columns if 'population' in c), None)
-        if pop_col: rename_dict[pop_col] = 'population'
+            # Handle Scaling (Millions)
+            # Ensure '2024' is numeric
+            temp['2024'] = pd.to_numeric(temp['2024'], errors='coerce')
 
-        hist_pop = hist_pop.rename(columns=rename_dict)
+            def scale_pop(row):
+                val = row['2024']
+                scale = str(row['Scale']).lower()
+                if pd.isna(val):
+                    return 0
+                if 'million' in scale:
+                    return val * 1_000_000
+                return val
 
-        # Apply country name standardization
-        if 'country' in hist_pop.columns:
-            hist_pop['country'] = hist_pop['country'].replace(country_names_to_change)
+            temp['population'] = temp.apply(scale_pop, axis=1)
+            temp['year'] = 2024
 
-        # Select only relevant columns
-        combined_df = hist_pop[['country', 'year', 'population', 'iso']].copy()
+            processed_2024 = temp[['country', 'year', 'population']]
 
-        # Remove any existing 2024 data from history to prefer the new file
-        combined_df = combined_df[combined_df['year'] != 2024]
-
-    # --- 2. Process New 2024 Data ---
-    if not curr_pop.empty:
-        # Normalize columns
-        curr_pop.columns = curr_pop.columns.str.lower().str.strip()
-
-        # A. Identify 'Country' Column
-        country_col = None
-        possible_country_names = ['country', 'name', 'nation', 'entity']
-
-        # Try finding exact name match
-        for col in curr_pop.columns:
-            if col in possible_country_names:
-                country_col = col
-                break
-
-        # Fallback: Find first text-based column
-        if not country_col:
-            for col in curr_pop.columns:
-                if curr_pop[col].dtype == object:
-                    country_col = col
-                    break
-
-        # B. Identify 'Year' Column
-        year_col = None
-        if 'year' in curr_pop.columns:
-            year_col = 'year'
-
-        # C. Identify 'Population' Column
-        # Look for 'population', 'pop', '2024', or take the first numeric column that isn't the year
-        pop_col = None
-        possible_pop_names = ['population', 'pop', 'total', '2024']
-
-        # Try explicit match
-        for col in curr_pop.columns:
-            if any(x in col for x in possible_pop_names) and col != year_col:
-                pop_col = col
-                break
-
-        # Fallback: Find first numeric column that is NOT the year
-        if not pop_col:
-            for col in curr_pop.columns:
-                # Check if numeric and not the identified year column
-                is_numeric = pd.api.types.is_numeric_dtype(curr_pop[col])
-                if is_numeric and col != year_col:
-                    pop_col = col
-                    break
-
-        # --- D. Clean and Format New Data ---
-        if country_col and pop_col:
-            # Create a clean subset
-            new_data = pd.DataFrame()
-            new_data['country'] = curr_pop[country_col]
-
-            # Handle Year: If exists, use it. If not, force 2024.
-            if year_col:
-                new_data['year'] = pd.to_numeric(curr_pop[year_col], errors='coerce')
-            else:
-                new_data['year'] = 2024
-
-            # Handle Population: Clean string formatting (remove commas)
-            if curr_pop[pop_col].dtype == object:
-                new_data['population'] = curr_pop[pop_col].astype(str).str.replace(',', '').apply(pd.to_numeric,
-                                                                                                  errors='coerce')
-            else:
-                new_data['population'] = pd.to_numeric(curr_pop[pop_col], errors='coerce')
-
-            # Filter ONLY for 2024 (as requested)
-            new_data = new_data[new_data['year'] == 2024].copy()
-
-            # Standardize country names
-            new_data['country'] = new_data['country'].str.strip()
-            new_data['country'] = new_data['country'].replace(country_names_to_change)
-
-            # Attempt to map ISO codes from history
-            if not combined_df.empty and 'iso' in combined_df.columns:
-                iso_map = combined_df.dropna(subset=['iso']).set_index('country')['iso'].to_dict()
-                new_data['iso'] = new_data['country'].map(iso_map)
-            else:
-                new_data['iso'] = np.nan
-
-            # Append new 2024 data to the historical data
-            combined_df = pd.concat([combined_df, new_data], ignore_index=True)
-
-    # --- 3. Final Cleanup & Interpolation ---
-    combined_df['year'] = combined_df['year'].astype(int)
-
-    # Sort to ensure correct interpolation order
-    combined_df = combined_df.sort_values(['country', 'year'])
-
-    # Remove duplicates: keep the last entry (prioritizing the new file if overlap exists)
-    combined_df = combined_df.drop_duplicates(subset=['country', 'year'], keep='last')
-
-    # Interpolate missing years (fills gaps between history and 2024)
-    min_year, max_year = 1896, 2024
-    all_years = list(range(min_year, max_year + 1))
-    olympic_years = list(range(min_year, max_year + 1, 4))
-
-    processed_dfs = []
-
-    for country, group in combined_df.groupby('country'):
-        group = group.set_index('year')
-        # Reindex to include all years for interpolation
-        new_index = sorted(list(set(all_years) | set(group.index)))
-        group = group.reindex(new_index)
-
-        # Linear interpolation
-        group['population'] = group['population'].interpolate(method='linear', limit_direction='both')
-        group['country'] = country
-
-        # Fill ISO forward/backward
-        if 'iso' in group.columns:
-            group['iso'] = group['iso'].ffill().bfill().infer_objects(copy=False)
-
-        # Filter only Olympic years
-        olympic_data = group.loc[group.index.isin(olympic_years)].reset_index()
-        processed_dfs.append(olympic_data)
-
-    if not processed_dfs:
+    # 3. Combine
+    if hist_df.empty and isinstance(processed_2024, list):
         return pd.DataFrame()
 
-    final_df = pd.concat(processed_dfs, ignore_index=True)
-    final_df = final_df.rename(columns={'index': 'year'})
+    if isinstance(processed_2024, pd.DataFrame) and not processed_2024.empty:
+        combined = pd.concat([hist_df, processed_2024], ignore_index=True)
+    else:
+        combined = hist_df
 
-    return final_df
+    return combined
 
 
 # --- 5. Life Expectancy Processor (Wide Format Fix) ---

@@ -77,14 +77,46 @@ def show_global_overview(medals_only, total_medals_per_country, country_list, me
             top_sports_html = "N/A"
 
         # Display metrics in a row: Total Medals | Best Year | Top Sports
-        m1, m2, m3 = st.columns([1, 1, 2])
-        m1.metric("Total Medals", total)
-        m2.metric("Best Year", str(best_year))
+        m1, m2, m3 = st.columns([1, 1, 1.5])  # Adjusted ratios for better fit
+
+        # Consistent style for all cards
+        card_style = """
+                background-color: #ffffff;
+                border: 1px solid #f0f2f6;
+                padding: 15px;
+                border-radius: 10px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+                height: 100px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            """
+        label_style = "font-size: 16px; color: rgb(49, 51, 63); margin-bottom: 2px; opacity: 0.8;"
+        value_style = "font-size: 27px; font-weight: 500; color: rgb(49, 51, 63);"
+
+        with m1:
+            st.markdown(f"""
+                    <div style="{card_style}">
+                        <div style="{label_style}">Total Medals</div>
+                        <div style="{value_style}">{total}</div>
+                    </div>
+                """, unsafe_allow_html=True)
+
+        with m2:
+            st.markdown(f"""
+                    <div style="{card_style}">
+                        <div style="{label_style}">Best Year</div>
+                        <div style="{value_style}">{best_year}</div>
+                    </div>
+                """, unsafe_allow_html=True)
+
         with m3:
-            st.markdown("""<div style="font-size: 14px; color: #555; margin-bottom: 4px;">Top Sports</div>""",
-                        unsafe_allow_html=True)
-            st.markdown(f"""<div style="font-size: 16px; line-height: 1.8;">{top_sports_html}</div>""",
-                        unsafe_allow_html=True)
+            st.markdown(f"""
+                    <div style="{card_style}">
+                        <div style="{label_style}">Top Sports</div>
+                        <div style="font-size: 16px; font-weight: 1800;">{top_sports_html}</div>
+                    </div>
+                """, unsafe_allow_html=True)
 
     st.divider()
 
@@ -185,7 +217,7 @@ def show_global_overview(medals_only, total_medals_per_country, country_list, me
         # Plotting Logic
         if trend_mode == "Total":
             y_val = 'medals'
-            color_seq = ["tomato"]
+            color_seq = ["#DC143C"]
             y_title = "Total Medals"
         else:
             y_val = 'medals_per_million'
@@ -193,7 +225,7 @@ def show_global_overview(medals_only, total_medals_per_country, country_list, me
             y_title = "Medals / Million"
 
         if y_val in td.columns:
-            fig = px.line(td, x='year', y=y_val, markers=True,
+            fig = px.line(td, x='year', y=y_val, markers=False,
                           color_discrete_sequence=color_seq,
                           hover_data={'medals': True, 'population': True, 'medals_per_million': ':.2f'})
             fig.update_layout(height=400, yaxis_title=y_title)

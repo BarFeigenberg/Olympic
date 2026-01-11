@@ -3,259 +3,120 @@ from data_processor import *
 
 
 def create_host_radar_chart(medals_only, host_data, h_noc, h_year, view_mode="All"):
-    """
-    Create a Horizontal Range Chart (Dumbbell Plot) showing medal distribution.
-    Ranges show the country's historical Min-Max medals per category.
-    Markers show Current (Host), Past Avg, and Future Avg.
-    """
     if medals_only.empty:
         return None
-    
-    # Get all years for this country
+
     country_years = sorted(medals_only[medals_only['noc'] == h_noc]['year'].unique())
-    
     if not country_years:
         return None
-    
-    # Define groups
+
     past_years = [y for y in country_years if y < h_year]
     future_years = [y for y in country_years if y > h_year]
     current_year = h_year if h_year in country_years else None
+    categories = list(reversed(CATEGORY_ORDER))
 
-    categories = list(reversed(CATEGORY_ORDER)) # Reverse for Top-to-Bottom plotting
-    
-    # --- Calculate Statistics per Category ---
     stats = {}
-
     for cat in categories:
-        # Get medals for ALL years to find Min/Max Range
         all_vals = []
         for y in country_years:
             val = get_medals_by_sport_category(medals_only, h_noc, y).get(cat, 0)
             all_vals.append(val)
-        
+
         if not all_vals:
-             stats[cat] = {'min': 0, 'max': 0, 'current': 0, 'past_avg': None, 'future_avg': None}
-             continue
-
-        # range
-        min_val = min(all_vals)
-        max_val = max(all_vals)
-        
-        # Current Value
-        curr_val = 0
-        if current_year:
-             curr_val = get_medals_by_sport_category(medals_only, h_noc, current_year).get(cat, 0)
-
-        # Past Avg
-        p_avg = None
-        if past_years:
-            p_vals = []
-            for y in past_years:
-                p_vals.append(get_medals_by_sport_category(medals_only, h_noc, y).get(cat, 0))
-            p_avg = sum(p_vals) / len(p_vals) if p_vals else 0
-
-        # Future Avg
-        f_avg = None
-        if future_years:
-            f_vals = []
-            for y in future_years:
-                f_vals.append(get_medals_by_sport_category(medals_only, h_noc, y).get(cat, 0))
-            f_avg = sum(f_vals) / len(f_vals) if f_vals else 0
-            
-        stats[cat] = {
-            'min': min_val, 'max': max_val,
-            'current': curr_val,
-            'past_avg': p_avg,
-            'future_avg': f_avg
-        }
-    first_future_year = True
-    first_future_host_year = True
-    
-    # Map categories to numeric indices
-    cat_y_map = {cat: i for i, cat in enumerate(categories)}
-    
-    fig = go.Figure()
-    
-    # --- Calculate Dynamic Y-Offsets for Collision Avoidance ---
-    # We want to keep points on the line (offset 0) unless they collide (close in X).
-    # If they collide, we spread them vertically.
-    
-    y_offsets_data = {cat: {'past': 0, 'future': 0, 'current': 0} for cat in categories}
-    
-    for cat in categories:
-        points = []
-        if view_mode in ["Past + Current", "All"] and stats[cat]['past_avg'] is not None:
-            points.append({'type': 'past', 'val': stats[cat]['past_avg']})
-        if view_mode in ["Current + Future", "All"] and stats[cat]['future_avg'] is not None:
-             points.append({'type': 'future', 'val': stats[cat]['future_avg']})
-        if current_year and view_mode in ["Past + Current", "Current + Future", "All"]:
-             points.append({'type': 'current', 'val': stats[cat]['current']})
-        
-        if not points:
+            stats[cat] = {'min': 0, 'max': 0, 'current': 0, 'past_avg': None, 'future_avg': None}
             continue
-            
-        # Sort by value to find clusters
-        points.sort(key=lambda x: x['val'])
-        
-        # Simple clustering: if dist < threshold, group them
-        threshold = 2.0 # Medal count threshold for overlap
-        clusters = []
-        if points:
-            curr_cluster = [points[0]]
-            for i in range(1, len(points)):
-                if (points[i]['val'] - points[i-1]['val']) < threshold:
-                    curr_cluster.append(points[i])
-                else:
-                    clusters.append(curr_cluster)
-                    curr_cluster = [points[i]]
-            clusters.append(curr_cluster)
-        
-        # Assign offsets within clusters
-        for cluster in clusters:
-            count = len(cluster)
-            if count == 1:
-                y_offsets_data[cat][cluster[0]['type']] = 0
-            elif count == 2:
-                # Spread: -0.15, +0.15
-                offsets = [-0.15, 0.15]
-                # Sort cluster by type priority for consistent stacking? Or random?
-                # Let's keep input order or val order. 
-                # cluster is sorted by val.
-                for idx, pt in enumerate(cluster):
-                    y_offsets_data[cat][pt['type']] = offsets[idx]
-            elif count == 3:
-                # Spread: -0.2, 0, +0.2
-                offsets = [-0.25, 0, 0.25]
-                for idx, pt in enumerate(cluster):
-                    y_offsets_data[cat][pt['type']] = offsets[idx]
 
-    # 1. Draw Range Lines (Background) at Center (y=i)
+        stats[cat] = {
+            'min': min(all_vals),
+            'max': max(all_vals),
+            'current': get_medals_by_sport_category(medals_only, h_noc, current_year).get(cat,
+                                                                                          0) if current_year else 0,
+            'past_avg': (sum(p_vals := [get_medals_by_sport_category(medals_only, h_noc, y).get(cat, 0) for y in
+                                        past_years]) / len(p_vals)) if past_years else None,
+            'future_avg': (sum(f_vals := [get_medals_by_sport_category(medals_only, h_noc, y).get(cat, 0) for y in
+                                          future_years]) / len(f_vals)) if future_years else None
+        }
+
+    fig = go.Figure()
+
+    # Colors Palette
+    c_red = "#EE334E"
+    c_blue = "#0081C8"
+    c_green = "#00A651"
+    c_range = "rgba(220, 220, 220, 0.6)"
+    c_ticks = "rgba(150, 150, 150, 0.8)"
+
     for i, cat in enumerate(categories):
         s = stats[cat]
         if s['max'] > 0:
-            # Add line shape manually
-            fig.add_shape(
-                type="line",
-                x0=s['min'], y0=i, x1=s['max'], y1=i,
-                line=dict(color="rgba(220, 220, 220, 0.6)", width=8),
-                layer="below"
-            )
-            
-            # Add vertical ticks at ends
+            # 1. Range Bar (The horizontal gray line)
+            fig.add_trace(go.Scatter(
+                x=[s['min'], s['max']], y=[i, i],
+                mode='lines',
+                line=dict(color=c_range, width=8),
+                hoverinfo='skip', showlegend=False
+            ))
+
+            # 2. Range End Ticks (The "Dumbbell" brackets)
             fig.add_trace(go.Scatter(
                 x=[s['min'], s['max']], y=[i, i],
                 mode='markers',
-                marker=dict(symbol='line-ns-open', size=12, color='silver', line_width=2),
-                showlegend=False,
-                hoverinfo='skip'
+                marker=dict(
+                    symbol='line-ns-open',
+                    size=14,
+                    line_color=c_ticks,
+                    color=c_ticks,
+                    line_width=2
+                ),
+                showlegend=False, hoverinfo='skip'
             ))
 
-    # Add hidden trace for legend entry 'Historical Range'
-    fig.add_trace(go.Scatter(
-        x=[None], y=[None],
-        mode='lines',
-        line=dict(color="rgba(220, 220, 220, 0.8)", width=8),
-        name='Historical Range'
-    ))
+        # 3. Past Average Marker (Red)
+        if s['past_avg'] is not None:
+            fig.add_trace(go.Scatter(
+                x=[s['past_avg']], y=[i],
+                mode='markers',
+                marker=dict(symbol='line-ns', size=19, line_color=c_red, color=c_red, line_width=4),
+                name='Past Avg', showlegend=True if i == 0 else False,
+                hovertemplate=f"Past Avg: {s['past_avg']:.1f}<extra></extra>"
+            ))
 
-    # 2. Add Markers with Dynamic Offsets
-    
-    # Past Avg (Red)
-    x_past = []
-    y_past = []
-    t_past = []
-    if view_mode in ["Past + Current", "All"]:
-        for cat in categories:
-            if stats[cat]['past_avg'] is not None:
-                x_past.append(stats[cat]['past_avg'])
-                # Use dynamic offset
-                y_past.append(cat_y_map[cat] + y_offsets_data[cat]['past'])
-                t_past.append(f"{cat}<br>Past Avg: {stats[cat]['past_avg']:.1f}")
+        # 4. Future Average Marker (Green)
+        if s['future_avg'] is not None:
+            fig.add_trace(go.Scatter(
+                x=[s['future_avg']], y=[i],
+                mode='markers',
+                marker=dict(symbol='line-ns', size=19, line_color=c_green, color=c_green, line_width=4),
+                name='Future Avg', showlegend=True if i == 0 else False,
+                hovertemplate=f"Future Avg: {s['future_avg']:.1f}<extra></extra>"
+            ))
 
-        fig.add_trace(go.Scatter(
-            x=x_past, y=y_past,
-            mode='markers',
-            name='Past Avg',
-            marker=dict(symbol='circle', color='#B22222', size=11, line=dict(color='black', width=1)), # Red Circle
-            hovertemplate="%{text}<extra></extra>",
-            text=t_past
-        ))
-
-    # Future Avg (Green)
-    x_future = []
-    y_future = []
-    t_future = []
-    if view_mode in ["Current + Future", "All"]:
-        for cat in categories:
-            if stats[cat]['future_avg'] is not None:
-                x_future.append(stats[cat]['future_avg'])
-                y_future.append(cat_y_map[cat] + y_offsets_data[cat]['future'])
-                t_future.append(f"{cat}<br>Future Avg: {stats[cat]['future_avg']:.1f}")
-
-        fig.add_trace(go.Scatter(
-            x=x_future, y=y_future,
-            mode='markers',
-            name='Future Avg',
-            marker=dict(symbol='circle', color='#00C853', size=11, line=dict(color='black', width=1)), # Green Circle
-            hovertemplate="%{text}<extra></extra>",
-            text=t_future
-        ))
-
-    # Current (Gold)
-    x_curr = []
-    y_curr = []
-    t_curr = []
-    if current_year and view_mode in ["Past + Current", "Current + Future", "All"]:
-        for cat in categories:
-            val = stats[cat]['current']
-            x_curr.append(val)
-            y_curr.append(cat_y_map[cat] + y_offsets_data[cat]['current'])
-            t_curr.append(f"{cat}<br>{current_year}: {val} (Host)")
-
-        fig.add_trace(go.Scatter(
-            x=x_curr, y=y_curr,
-            mode='markers',
-            name=f'{current_year} (Host)',
-            marker=dict(symbol='circle', color='#FFD700', size=15, line=dict(color='black', width=1)), # Gold Circle
-            hovertemplate="%{text}<extra></extra>",
-            text=t_curr
-        ))
+        # 5. Host Year Marker (Blue)
+        if current_year:
+            fig.add_trace(go.Scatter(
+                x=[s['current']], y=[i],
+                mode='markers',
+                marker=dict(symbol='line-ns', size=23, line_color=c_blue, color=c_blue, line_width=6),
+                name=f'{h_year} (Host)', showlegend=True if i == 0 else False,
+                hovertemplate=f"{h_year}: {s['current']}<extra></extra>"
+            ))
 
     fig.update_layout(
-        title=dict(text="Medal Range per Sport Category", font=dict(size=18)),
-        xaxis=dict(
-            title="Number of Medals",
-            showgrid=True,
-            gridcolor='rgba(0,0,0,0.1)',
-            zeroline=True,
-            zerolinecolor='rgba(0,0,0,0.2)'
-        ),
+        xaxis=dict(title="Number of Medals", showgrid=True, gridcolor='whitesmoke'),
         yaxis=dict(
-            title="",
-            showgrid=True,
-            gridcolor='rgba(0,0,0,0.1)',
-            tickmode='array',
-            tickvals=list(range(len(categories))),
-            ticktext=categories,
-            tickfont=dict(color='black', size=13, family='Arial Black, sans-serif')
+            tickmode='array', tickvals=list(range(len(categories))), ticktext=categories,
+            tickfont=dict(size=12, family="Arial Black")
         ),
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="right",
-            x=1
-        ),
-        height=600,
-        margin=dict(l=20, r=20, t=60, b=20),
-        plot_bgcolor='white'
+        legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5),
+        colorway=["#808080"],  # Prevents automatic color cycling
+        height=600, margin=dict(l=20, r=20, t=100, b=20), plot_bgcolor='white'
     )
-    
+
     return fig
 
 
 def create_parallel_coordinates_chart(medals_only, host_data, selected_noc, focus_year=None):
+
     medals_only = medals_only[medals_only['medal'] != 'No medal'].drop_duplicates(
         subset=['year', 'noc', 'event', 'medal'])
 
@@ -277,22 +138,24 @@ def create_parallel_coordinates_chart(medals_only, host_data, selected_noc, focu
 
     if focus_year:
         def get_color_val(row):
-            if row['year'] == focus_year: return 2
+            if row['year'] == focus_year:
+                return 2
             return row['is_host']
 
         df['color_val'] = df.apply(get_color_val, axis=1)
 
         colorscale = [
-            [0, 'rgba(0, 0, 139, 0.07)'],  # Guest Year - Very Transparent Blue
-            [0.5, 'rgba(0, 255, 0, 0.07)'],  # Host Year - Very Transparent Green
-            [1, 'rgba(255, 0, 0, 1)']  # Focused Year - Solid Bright Red
+            [0, "#0081C8"],  # Guest Year - Blue
+            [0.5, "#00A651"],  # Host Year - Green
+            [1, "#EE334E"]  # Focused Year - Red
         ]
     else:
         df['color_val'] = df['is_host']
-        colorscale = [[0, '#00008B'], [1, '#00FF00']]
+        colorscale = [[0, '#0081C8'], [1, '#00A651']]
 
     df = df.sort_values(by='color_val', ascending=True)
-    full_timeline = list(range(1896, 2025, 4))
+    war_years = [1916, 1940, 1944]
+    full_timeline = [y for y in range(1896, 2025, 4) if y not in war_years]
 
     fig = go.Figure(data=
     go.Parcoords(
@@ -416,10 +279,9 @@ def show_host_advantage(host_data, medals_only, country_ref):
     # Calculate 'Lift %'
     host_data['lift_percent'] = (host_data['lift'] - 1) * 100
 
-    # FIX: Force 1896 to 0%
-    host_data.loc[host_data['year'] == 1896, 'lift_percent'] = 0
-    host_data['color'] = host_data['lift_percent'].apply(lambda x: '#2ECC71' if x >= 0 else '#E74C3C')
 
+    host_data.loc[host_data['year'] == 1896, 'lift_percent'] = 0
+    host_data['color'] = host_data['lift_percent'].apply(lambda x: '#00A651' if x >= 0 else '#EE334E')
     # Sort Data
     global_chart_data = host_data.sort_values('year').reset_index(drop=True)
 
@@ -430,7 +292,8 @@ def show_host_advantage(host_data, medals_only, country_ref):
 
     # --- 2. RENDER TIMELINE SELECTOR (Plotly Scatter Version) ---
     # 1. Create a complete timeline from 1896 to 2024 (every 4 years)
-    full_timeline = list(range(1896, 2025, 4))
+    war_years = [1916, 1940, 1944]
+    full_timeline = [y for y in range(1896, 2025, 4) if y not in war_years]
 
     # 2. Render TIMELINE SELECTOR with the full timeline
     if 'last_center_year' not in st.session_state:
@@ -443,11 +306,6 @@ def show_host_advantage(host_data, medals_only, country_ref):
 
     if selected_point and "selection" in selected_point and selected_point["selection"]["points"]:
         new_year = selected_point["selection"]["points"][0]["x"]
-
-        # Check if it's a war year (optional: you can add a toast message)
-        war_years = [1916, 1940, 1944]
-        if new_year in war_years:
-            st.toast(f"The {new_year} Olympics were cancelled due to World War.", icon="⚠️")
 
         if new_year != st.session_state.last_center_year:
             st.session_state.last_center_year = new_year
@@ -504,6 +362,8 @@ def show_host_advantage(host_data, medals_only, country_ref):
         plot_bgcolor='rgba(0,0,0,0)',
         xaxis=dict(
             type='category',
+            categoryorder='array',
+            categoryarray=[str(y) for y in full_timeline],
             fixedrange=True,
             showgrid=False,
             tickfont=dict(size=12, family="Arial Black")
@@ -526,77 +386,69 @@ def show_host_advantage(host_data, medals_only, country_ref):
     # --- RADAR CHART: Medal Distribution by Sport Category ---
     if sel_event and h_noc and h_year:
         st.subheader(f"Medal Distribution by Sport Category: {full_country_name} - {h_year}")
+        st.caption(f"Comparing {h_year} performance across sport categories")
 
-        # --- PRE-CALCULATE KPIS FOR METRICS ---
+        # --- 1. PRE-CALCULATE KPIS ---
         country_history = medals_only[medals_only['noc'] == h_noc].groupby('year')['medal'].count().reset_index()
         pre_years = country_history[(country_history['year'] < h_year) & (country_history['year'] >= h_year - 12)]
         avg_pre = pre_years['medal'].mean() if not pre_years.empty else 0
         diff = h_medals - avg_pre
         boost_pct = (diff / avg_pre * 100) if avg_pre > 0 else 0
 
-        # --- CSS STYLING FOR METRICS (Card Style) ---
-        st.markdown("""
-                <style>
-                    /* Style the metric container */
-                    [data-testid="stMetric"] {
-                        background-color: white;
-                        border: 1px solid #dedede;
-                        padding: 10px;
-                        border-radius: 10px;
-                        color: black;
-                        box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
-                        margin-bottom: 10px; /* Space between vertical cards */
-                    }
-                    /* Force label color */
-                    [data-testid="stMetricLabel"] p {
-                        color: #444 !important;
-                    }
-                    /* Force value color */
-                    [data-testid="stMetricValue"] div {
-                        color: black !important;
-                    }
+        # --- 2. SHARED STYLING ---
+        card_style = """
+                    background-color: #ffffff;
+                    border: 1px solid #f0f2f6;
+                    padding: 15px;
+                    border-radius: 10px;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+                    height: 100px;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                """
+        label_style = "font-size: 16px; color: rgb(49, 51, 63); margin-bottom: 2px; opacity: 0.8;"
+        value_style = "font-size: 26px; font-weight: 600; color: rgb(49, 51, 63);"
 
-                    /* RADIO BUTTON SMALLER STYLE */
-                    div[role="radiogroup"] label p {
-                        font-size: 13px !important;
-                    }
-                    div[role="radiogroup"] {
-                        gap: 0px !important;
-                    }
-                </style>
-                """, unsafe_allow_html=True)
-        
-        # --- LAYOUT: [Chart 2/3] | [Metrics 1/3] ---
-        col_chart, col_metrics = st.columns([2, 1], gap="medium")
+        # Determine Boost Icon and Color
+        boost_color = "#2ECC71" if boost_pct > 0 else "#E74C3C"
+        boost_icon = "▲" if boost_pct > 0 else "▼"
 
-        with col_chart:
-            # Top controls - just view mode
-            ctrl_col1, ctrl_col2 = st.columns([2, 1])
-            with ctrl_col1:
-                st.caption(f"Comparing {h_year} performance across sport categories")
-            with ctrl_col2:
-                view_mode = st.radio(
-                    "View Mode:",
-                    ["All", "Past + Current", "Current + Future"],
-                    horizontal=False,
-                    label_visibility="collapsed" # Save space
-                )
-            
-            # Create and display radar chart
-            radar_fig = create_host_radar_chart(medals_only, host_data, h_noc, h_year, view_mode)
-            if radar_fig:
-                st.plotly_chart(radar_fig, width='stretch')
-            else:
-                st.info("No medal data available for this selection.")
+        # --- 3. METRICS ROW ---
+        m1, m2, m3, m4 = st.columns(4)
 
-        with col_metrics:
-            st.write("#### Performance Stats")
-            st.metric("Host Year Medals 🏅", h_medals)
-            st.metric("Pre-Host Avg (12y)", f"{avg_pre:.1f} 📊")
-            st.metric("Net Gain", f"+{int(diff)} 📈" if diff > 0 else int(diff))
-            delta_color = "normal" if boost_pct > 0 else "off"
-            st.metric("Performance Boost", f"{boost_pct:.1f}%", delta=f"{boost_pct:.1f}% 🚀",
-                      delta_color=delta_color)
+        with m1:
+            st.markdown(
+                f'<div style="{card_style}"><div style="{label_style}">Host Year Medals 🏅</div><div style="{value_style}">{h_medals}</div></div>',
+                unsafe_allow_html=True)
+        with m2:
+            st.markdown(
+                f'<div style="{card_style}"><div style="{label_style}">Pre-Host Avg (12y) 📊</div><div style="{value_style}">{avg_pre:.1f}</div></div>',
+                unsafe_allow_html=True)
+        with m3:
+            st.markdown(
+                f'<div style="{card_style}"><div style="{label_style}">Net Gain 📈</div><div style="{value_style}">{" + " if diff > 0 else ""}{int(diff)}</div></div>',
+                unsafe_allow_html=True)
+        with m4:
+            st.markdown(f"""
+                        <div style="{card_style}">
+                            <div style="{label_style}">Performance Boost</div>
+                            <div style="{value_style}">
+                                {boost_pct:.1f}% 
+                                <span style="color: {boost_color}; font-size: 18px; margin-left: 5px;">{boost_icon}</span>
+                            </div>
+                        </div>
+                    """, unsafe_allow_html=True)
+
+        st.write("")  # Spacer
+
+        # --- 4. FULL WIDTH CHART ---
+        # Note: view_mode is set to "All" and the radio buttons were removed
+        radar_fig = create_host_radar_chart(medals_only, host_data, h_noc, h_year, view_mode="All")
+        if radar_fig:
+            st.plotly_chart(radar_fig, use_container_width=True)
+        else:
+            st.info("No medal data available for this selection.")
 
     st.divider()
     if sel_event:
@@ -606,39 +458,51 @@ def show_host_advantage(host_data, medals_only, country_ref):
         country_years = sorted(medals_only[medals_only['noc'] == h_noc]['year'].unique())
 
         with col_info:
-            st.write("")
-            st.write("")
-            st.write("")
-            st.write("")
-            st.write("")
-            st.write("")
-            focus_year = st.selectbox(
-                "Year:",
-                ["All"] + list(reversed(country_years))
-            )
-
+            focus_year = st.selectbox("Year:", ["All"] + list(reversed(country_years)))
             focus_year_val = None if focus_year == "All" else int(focus_year)
-            st.write("")
 
             if focus_year_val:
-                st.markdown(f"#### {focus_year_val}")
-
+                # Calculate data
                 m_only_filtered = medals_only[medals_only['medal'] != 'No medal'].drop_duplicates(
                     subset=['year', 'noc', 'event', 'medal'])
                 y_data = m_only_filtered[
                     (m_only_filtered['noc'] == h_noc) & (m_only_filtered['year'] == focus_year_val)]
                 m_count = len(y_data)
-
                 g_total = m_only_filtered[m_only_filtered['year'] == focus_year_val].shape[0]
                 share = (m_count / g_total * 100) if g_total > 0 else 0
-
-                st.metric("Medals", m_count)
-                st.metric("Share", f"{share:.1f}%")
-
                 is_host_year = focus_year_val in host_data[host_data['host_noc'] == h_noc]['year'].values
-                st.caption(f"Host: {'Yes' if is_host_year else 'No'}")
+
+                # Smaller Card Styling
+                side_card = """
+                    background-color: #ffffff;
+                    border: 1px solid #f0f2f6;
+                    padding: 10px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                    margin-bottom: 8px;
+                    text-align: center;
+                """
+                side_label = "font-size: 15px; color: #666; margin-bottom: 2px;"
+                side_value = "font-size: 21px; font-weight: bold; color: #333;"
+
+                # Render Cards
+                st.markdown(
+                    f'<div style="{side_card}"><div style="{side_label}">Medals</div><div style="{side_value}">{m_count}</div></div>',
+                    unsafe_allow_html=True)
+                st.markdown(
+                    f'<div style="{side_card}"><div style="{side_label}">Share</div><div style="{side_value}">{share:.1f}%</div></div>',
+                    unsafe_allow_html=True)
+
+                host_color = "#00A651" if is_host_year else "#EE334E"
+                host_text = "Yes" if is_host_year else "No"
+                st.markdown(
+                    f'<div style="{side_card}"><div style="{side_label}">Host</div><div style="{side_value}; color: {host_color};">{host_text}</div></div>',
+                    unsafe_allow_html=True)
             else:
                 st.caption("Select a year to focus on.")
+
+            focus_year_val = None if focus_year == "All" else int(focus_year)
+            st.write("")
 
         with col_chart:
             fig_parcoords = create_parallel_coordinates_chart(medals_only, host_data, h_noc, focus_year_val)

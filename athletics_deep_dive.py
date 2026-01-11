@@ -71,7 +71,7 @@ def show_athletics_deep_dive(athletics_df, country_ref):
     st.divider()
 
     # --- 2. EVENT SELECTION ---
-    # Updated CSS for tight alignment and vertical lift
+    # CSS for tight alignment and vertical lift
     st.markdown("""
             <style>
                 /* Lift the radio buttons up to match subheader height */
@@ -233,25 +233,36 @@ def show_athletics_deep_dive(athletics_df, country_ref):
     current_record_holder = record_breaks.sort_values('year').groupby('gender_label').tail(1)
     historical_record_breaks = record_breaks.drop(current_record_holder.index)
 
-    men_color, women_color = '#AEDEFC', '#F6B1CE'
+    men_color, women_color = '#1E90FF', 'violet'
     fig_trend = px.line(yearly_best, x='year', y='numeric_result', color='gender_label',
                         color_discrete_map={'Men': men_color, 'Women': women_color})
+
+    # Define Darker Shades for the Current Record Markers
+    dark_men = '#0047AB'  # Cobalt Blue
+    dark_women = '#C71585'  # Medium Violet Red
 
     def add_record_trace(df, color, default_size, is_current, group_name):
         if df.empty: return
 
         c_data = df[['name', 'country']].fillna('N/A').values
 
-        # Current record holder point is now black and smaller
-        marker_dict = dict(size=default_size, color=color, line=dict(width=1, color='white'))
+        # Logic for Current Record color: Darker version of the gender color
         if is_current:
-            marker_dict = dict(size=10, color='black', line=dict(width=1, color='white'))
+            marker_color = dark_men if group_name == 'Men' else dark_women
+            marker_size = 12
+        else:
+            marker_color = color
+            marker_size = default_size
 
         fig_trend.add_scatter(
             x=df['year'],
             y=df['numeric_result'],
             mode='markers',
-            marker=marker_dict,
+            marker=dict(
+                size=marker_size,
+                color=marker_color,
+                line=dict(width=1, color='white')
+            ),
             customdata=c_data,
             hovertemplate=(
                     "<b>%{customdata[0]}</b> (%{customdata[1]})<br>" +
@@ -259,7 +270,7 @@ def show_athletics_deep_dive(athletics_df, country_ref):
                     f"Result: %{{y}}{y_suffix}<br>" +
                     "<extra></extra>"
             ),
-            name=group_name,
+            name=f"Current Record ({group_name})" if is_current else group_name,
             legendgroup=group_name,
             showlegend=False
         )
@@ -272,6 +283,46 @@ def show_athletics_deep_dive(athletics_df, country_ref):
     add_record_trace(current_record_holder[current_record_holder['gender_label'] == 'Women'], women_color, 15, True,
                      'Women')
 
-    fig_trend.update_layout(height=500, plot_bgcolor='white',
-                            yaxis=dict(title=f"Result ({unit_title})", ticksuffix=y_suffix))
+    # 1. Use unique years present in data to avoid gaps (1940-1944 etc.)
+    tick_vals = sorted(vdf['year'].unique())
+
+    # 2. Create labels with "OR" for record years
+    tick_text = []
+    for y in tick_vals:
+        is_men_rec = not current_record_holder[
+            (current_record_holder['year'] == y) & (current_record_holder['gender_label'] == 'Men')].empty
+        is_women_rec = not current_record_holder[
+            (current_record_holder['year'] == y) & (current_record_holder['gender_label'] == 'Women')].empty
+
+        if is_men_rec and is_women_rec:
+            tick_text.append(
+                f"<b>{y}</b><br><span style='color:{dark_men}'>OR</span> <span style='color:{dark_women}'>OR</span>")
+        elif is_men_rec:
+            tick_text.append(f"<b>{y}</b><br><span style='color:{dark_men}'>OR</span>")
+        elif is_women_rec:
+            tick_text.append(f"<b>{y}</b><br><span style='color:{dark_women}'>OR</span>")
+        else:
+            tick_text.append(str(y))
+
+    # 3. Apply the updated layout with categorical axis and no vertical grids
+    fig_trend.update_layout(
+        height=600,
+        plot_bgcolor='white',
+        xaxis=dict(
+            title="Year",
+            type='category',
+            tickmode='array',
+            tickvals=tick_vals,
+            ticktext=tick_text,
+            tickangle=-270,
+            showgrid=False
+        ),
+        yaxis=dict(
+            title=f"Result ({unit_title})",
+            ticksuffix=y_suffix,
+            showgrid=True,
+            gridcolor='whitesmoke'
+        )
+    )
+
     st.plotly_chart(fig_trend, use_container_width=True)

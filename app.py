@@ -21,6 +21,20 @@ st.set_page_config(
 def local_css():
     st.markdown("""
     <style>
+        /* Change the background color of the main app area */
+        .stApp {
+            background-color: #F8FAFC;
+        }
+    
+        /* Ensure the header/toolbar doesn't stay white */
+        header[data-testid="stHeader"] {
+            background-color: #F8FAFC !important;
+        }
+    
+        /* Adjust the main content block if needed */
+        .main .block-container {
+            background-color: #F8FAFC;
+        }
         /* Only removing padding, keeping header visible for Rerun button */
         .block-container {
             padding-top: 1rem;
