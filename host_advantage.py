@@ -154,8 +154,20 @@ def create_parallel_coordinates_chart(medals_only, host_data, selected_noc, focu
         colorscale = [[0, '#0081C8'], [1, '#00A651']]
 
     df = df.sort_values(by='color_val', ascending=True)
+
+    # Filter war years first
     war_years = [1916, 1940, 1944]
-    full_timeline = [y for y in range(1896, 2025, 4) if y not in war_years]
+    df = df[~df['year'].isin(war_years)].copy()
+
+    # THE TRICK: Convert year to string to force categorical behavior
+    df['year_str'] = df['year'].astype(str)
+
+    # Update the timeline list to match strings
+    full_timeline_str = [str(y) for y in range(1896, 2025, 4) if y not in war_years]
+
+    # Map years to a numeric sequence (0, 1, 2...) so Plotly treats them as equal steps
+    year_map = {year: i for i, year in enumerate(full_timeline_str)}
+    df['year_index'] = df['year_str'].map(year_map)
 
     fig = go.Figure(data=
     go.Parcoords(
@@ -166,10 +178,9 @@ def create_parallel_coordinates_chart(medals_only, host_data, selected_noc, focu
         ),
         dimensions=[
             dict(label='Year',
-                 values=df['year'],
-                 tickvals=full_timeline,
-                 ticktext=[str(y) for y in full_timeline],
-                 range=[1896, 2024]),
+                 values=df['year_index'],
+                 tickvals=list(year_map.values()),
+                 ticktext=list(year_map.keys())),
             dict(range=[-1, 1.5],
                  tickvals=[-1, 0, 1, 1.5],
                  ticktext=['', 'No', 'Yes', ''],
@@ -177,14 +188,14 @@ def create_parallel_coordinates_chart(medals_only, host_data, selected_noc, focu
             dict(label='Medals', values=df['country_total']),
             dict(label='Medals Share (%)', values=df['percentage'], tickformat='.1f')
         ],
-        labelfont=dict(size=13, color='black', family="Arial Black"),
+        labelfont=dict(size=14, color='black', family="Arial Black"),
         tickfont=dict(size=10, color='black')
     )
     )
 
     fig.update_layout(
         height=800,
-        margin=dict(l=60, r=60, t=40, b=40),
+        margin=dict(l=80, r=80, t=80, b=40),
         paper_bgcolor="white",
         plot_bgcolor="white"
     )
@@ -196,7 +207,7 @@ def create_timeline_selector(all_years, selected_year):
     fig = go.Figure()
 
     fig.add_trace(go.Scatter(
-        x=all_years,
+        x=[str(y) for y in all_years], # Convert to string for categorical axis
         y=[0] * len(all_years),
         mode='lines+markers',
         marker=dict(
@@ -213,22 +224,20 @@ def create_timeline_selector(all_years, selected_year):
         height=120,
         margin=dict(l=40, r=40, t=20, b=40),
         xaxis=dict(
+            type='category', # This removes the gaps between 1936 and 1948
             showgrid=False,
             showline=False,
             zeroline=False,
-            tickmode='array',
-            tickvals=all_years,  # Force a tick for EVERY year
-            ticktext=[str(y) for y in all_years],
-            tickangle=45,  # Tilt the years so they don't collide
-            tickfont=dict(size=10, color='#666', family="Arial")
+            tickangle=45,
+            tickfont=dict(size=10, color='#666', family="Arial"),
+            fixedrange=True
         ),
         yaxis=dict(showgrid=False, showline=False, zeroline=False, showticklabels=False),
         plot_bgcolor='white',
         paper_bgcolor='white',
-        dragmode=False  # Disable dragging to keep it stable for clicks
+        dragmode=False
     )
 
-    # Remove Plotly toolbar for a cleaner look
     return fig.update_layout(modebar_remove=['zoom', 'pan', 'select', 'lasso2d'])
 
 
@@ -238,6 +247,9 @@ def show_host_advantage(host_data, medals_only, country_ref):
     if not country_ref.empty:
         noc_map = dict(zip(country_ref['noc'], country_ref['country']))
 
+    # Fix: Initialize h_year with a fallback value immediately
+    h_year = 2024
+
     def get_label(row):
         full_name = noc_map.get(row['host_noc'], row['host_noc'])
         return f"{row['year']} - {row['host_city']} ({full_name})"
@@ -246,39 +258,15 @@ def show_host_advantage(host_data, medals_only, country_ref):
     options = sorted(host_data['label'].unique(), reverse=True)
 
     # --- 2. NEW LAYOUT: Title Left, Dropdown Right ---
-    # Ratio [5, 2]: Title takes 5 parts, Dropdown takes 2 parts
-    c_title, c_sel = st.columns([5, 2], gap="large")
-
-    with c_title:
-        st.title("The Host Effect")
-        st.markdown("Does hosting the Olympics actually guarantee more medals?")
-
-    with c_sel:
-        # Add spacers to push the dropdown down to align with the title text
-        st.write("")
-        st.write("")
-        sel_event = st.selectbox("Select Host Event:", options)
-
+    st.title("The Host Effect")
+    st.markdown("Does hosting the Olympics actually guarantee more medals?")
     st.divider()
-
-    # Extract Selection Variables EARLY
-    h_year = None
-    h_medals = None
-    h_noc = None
-    full_country_name = None
-    if sel_event:
-        row = host_data[host_data['label'] == sel_event].iloc[0]
-        h_year = int(row['year'])
-        h_noc = row['host_noc']
-        h_medals = int(row['total_medals'])
-        full_country_name = noc_map.get(h_noc, h_noc)
 
     # THE GLOBAL "BIG QUESTION" CHART ---
     st.subheader("The Big Picture: Does Hosting Pay Off?")
 
     # Calculate 'Lift %'
     host_data['lift_percent'] = (host_data['lift'] - 1) * 100
-
 
     host_data.loc[host_data['year'] == 1896, 'lift_percent'] = 0
     host_data['color'] = host_data['lift_percent'].apply(lambda x: '#00A651' if x >= 0 else '#EE334E')
@@ -380,9 +368,27 @@ def show_host_advantage(host_data, medals_only, country_ref):
     # 5. Place Chart in placeholder (ABOVE slider)
     chart_place.plotly_chart(fig_global, width='stretch')
     st.caption("Tip: Select the year you want to see in the middle.")
-
     st.divider()
 
+    col_sel, col_spacer = st.columns([1, 5])
+
+    with col_sel:
+        sel_event = st.selectbox("Select Host Event:", options)
+
+    # Extract Selection Variables EARLY
+    h_year = None
+    h_medals = None
+    h_noc = None
+    full_country_name = None
+    if sel_event:
+        row = host_data[host_data['label'] == sel_event].iloc[0]
+        h_year = int(row['year'])
+        h_noc = row['host_noc']
+        h_medals = int(row['total_medals'])
+        full_country_name = noc_map.get(h_noc, h_noc)
+
+    st.write("")
+    st.write("")
     # --- RADAR CHART: Medal Distribution by Sport Category ---
     if sel_event and h_noc and h_year:
         st.subheader(f"Medal Distribution by Sport Category: {full_country_name} - {h_year}")

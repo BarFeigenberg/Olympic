@@ -10,18 +10,27 @@ def show_wellness_winning(gap_df):
         # --- DATA FILTERING ---
         gap_df = gap_df[gap_df['year'] >= 1920].copy()
 
+        # Olympic Color Map for Continents
+        olympic_palette = {
+            "Europe": "#0081C8",  # Blue
+            "Asia": "#00A651",  # Green
+            "Africa": "#000000",  # Black
+            "Americas": "#EE334E",  # Red
+            "Oceania": "#FCB131"  # Yellow
+        }
+
         # --- LAYOUT ADJUSTMENT ---
         col_title, col_controls = st.columns([3, 2], gap="medium")
 
         with col_title:
-            st.title("📈 Wellness & Winning Over Time")
+            st.title("Wellness & Winning Over Time")
 
         with col_controls:
             st.write("")
             st.write("")
             roi_mode = st.radio(
                 "Select View:",
-                ["Efficiency (Medals per Million)", "Total Impact (Total Medals)"],
+                ["Medals per Million)", "Total Medals"],
                 horizontal=True,
                 label_visibility="collapsed"
             )
@@ -41,7 +50,8 @@ def show_wellness_winning(gap_df):
             )
 
         # Helper string for the subtitle next to the title
-        bubble_legend_text = "<span style='font-size: 14px; color: #555; font-weight: normal;'>                                                            Bubble size = Delegation size</span>"
+        bubble_legend_text = ("<span style='font-size: 14px; color: #555; font-weight: normal;'>                                                            "
+                              "Bubble size = Delegation size</span>")
 
         if roi_mode == "Efficiency (Medals per Million)":
             # --- EFFICIENCY VIEW ---
@@ -60,6 +70,7 @@ def show_wellness_winning(gap_df):
                 gap_df, x="life_expectancy", y="y_pos_efficiency",
                 animation_frame="year", animation_group="country_name",
                 size="delegation_size", color="continent",
+                color_discrete_map=olympic_palette,
                 hover_name="country_name",
                 hover_data={"y_pos_efficiency": False, "medals_per_million": ':.2f'},
                 size_max=50,
@@ -95,6 +106,7 @@ def show_wellness_winning(gap_df):
                 gap_df, x="life_expectancy", y="y_pos_artificial",
                 animation_frame="year", animation_group="country_name",
                 size="delegation_size", color="continent",
+                color_discrete_map=olympic_palette,
                 hover_name="country_name", hover_data=["medals"],
                 size_max=50, range_x=[35, 90],
                 range_y=[-0.5, max_idx + 0.5],
@@ -112,6 +124,8 @@ def show_wellness_winning(gap_df):
                     gridcolor='#E5E5E5'
                 )
             )
+            # Ensure consistent transparency for all points
+            fig.update_traces(marker=dict(opacity=0.7, line=dict(width=1, color='White')))
 
         # -------------------------
         # ANIMATION FRAME UPDATES
@@ -119,6 +133,16 @@ def show_wellness_winning(gap_df):
 
         # 1. Set the Initial Layout (Start Year only)
         initial_year = gap_df['year'].min()
+        # New Legend Annotation
+        bubble_legend = dict(
+            x=1, y=-0.12,  # Positioned at the bottom right, below the axis
+            xref="paper", yref="paper",
+            text="⚪ <b>Bubble size</b> = Delegation size",
+            showarrow=False,
+            font=dict(size=12, color="#555"),
+            xanchor="right"
+        )
+
         fig.update_layout(
             annotations=[
                 get_year_annotation(initial_year)
@@ -130,9 +154,12 @@ def show_wellness_winning(gap_df):
             for frame in fig.frames:
                 frame_year = frame.name
 
-                # Update annotations to ONLY show the changing year
+                # Keep BOTH annotations: the changing year and the static legend
                 frame.layout = go.Layout(
-                    annotations=[get_year_annotation(frame_year)]
+                    annotations=[
+                        get_year_annotation(frame_year),
+                        bubble_legend
+                    ]
                 )
 
         # Adjust animation speed and force redraw for annotations

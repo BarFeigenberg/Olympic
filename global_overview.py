@@ -79,7 +79,7 @@ def show_global_overview(medals_only, total_medals_per_country, country_list, me
         # Display metrics in a row: Total Medals | Best Year | Top Sports
         m1, m2, m3 = st.columns([1, 1, 1.5])  # Adjusted ratios for better fit
 
-        # Consistent style for all cards
+        # Centralized and balanced card style
         card_style = """
                 background-color: #ffffff;
                 border: 1px solid #f0f2f6;
@@ -90,9 +90,10 @@ def show_global_overview(medals_only, total_medals_per_country, country_list, me
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
+                text-align: center; /* Center the text horizontally */
             """
-        label_style = "font-size: 16px; color: rgb(49, 51, 63); margin-bottom: 2px; opacity: 0.8;"
-        value_style = "font-size: 27px; font-weight: 500; color: rgb(49, 51, 63);"
+        label_style = "font-size: 15px; color: #666; margin-bottom: 2px; width: 100%;"
+        value_style = "font-size: 26px; font-weight: bold; color: #333; width: 100%;"
 
         with m1:
             st.markdown(f"""
@@ -111,10 +112,11 @@ def show_global_overview(medals_only, total_medals_per_country, country_list, me
                 """, unsafe_allow_html=True)
 
         with m3:
+            # For Top Sports, we use a slightly smaller font to ensure it fits the center
             st.markdown(f"""
                     <div style="{card_style}">
                         <div style="{label_style}">Top Sports</div>
-                        <div style="font-size: 16px; font-weight: 1800;">{top_sports_html}</div>
+                        <div style="font-size: 17px; font-weight: bold; margin-top: 5px;">{top_sports_html}</div>
                     </div>
                 """, unsafe_allow_html=True)
 
