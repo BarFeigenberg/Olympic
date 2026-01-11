@@ -1,18 +1,9 @@
-import streamlit as st
-import plotly.express as px
 import plotly.graph_objects as go
-import pandas as pd
+from data_processor import *
 
-# Import the shared processing functions
-from data_processor import (
-    get_processed_country_data,
-    get_combined_population_data,
-    calculate_medals_per_million,
-    get_all_world_countries
-)
 
 def show_global_overview(medals_only, total_medals_per_country, country_list, medals_data):
-    st.title("🏅 Global Olympic Insights")
+    st.title("Global Olympic Insights")
     st.divider()
 
     # --- 1. Data Preparation for Map & Global Stats ---
@@ -87,10 +78,10 @@ def show_global_overview(medals_only, total_medals_per_country, country_list, me
 
         # Display metrics in a row: Total Medals | Best Year | Top Sports
         m1, m2, m3 = st.columns([1, 1, 2])
-        m1.metric("🏅 Total Medals", total)
-        m2.metric("📅 Best Year", str(best_year))
+        m1.metric("Total Medals", total)
+        m2.metric("Best Year", str(best_year))
         with m3:
-            st.markdown("""<div style="font-size: 14px; color: #555; margin-bottom: 4px;">🏆 Top Sports</div>""",
+            st.markdown("""<div style="font-size: 14px; color: #555; margin-bottom: 4px;">Top Sports</div>""",
                         unsafe_allow_html=True)
             st.markdown(f"""<div style="font-size: 16px; line-height: 1.8;">{top_sports_html}</div>""",
                         unsafe_allow_html=True)
@@ -139,7 +130,7 @@ def show_global_overview(medals_only, total_medals_per_country, country_list, me
             colorscale=[[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0)']],  # Transparent fill
             showscale=False,
             hoverinfo="skip",
-            marker_line_color='black',  # Blue border
+            marker_line_color='black',
             marker_line_width=3
         ))
 
@@ -166,7 +157,7 @@ def show_global_overview(medals_only, total_medals_per_country, country_list, me
     # --- ROW 3: MEDALS TREND (Full Width) ---
     t_col1, t_col2 = st.columns([2, 1])
     with t_col1:
-        st.subheader("📈 Medals Trend")
+        st.subheader("Medals Trend")
     with t_col2:
         trend_mode = st.radio("Metric:", ["Total", "Per Million"], horizontal=True, label_visibility="collapsed")
 
@@ -194,7 +185,7 @@ def show_global_overview(medals_only, total_medals_per_country, country_list, me
         # Plotting Logic
         if trend_mode == "Total":
             y_val = 'medals'
-            color_seq = ["#77DD77"]
+            color_seq = ["tomato"]
             y_title = "Total Medals"
         else:
             y_val = 'medals_per_million'
@@ -206,7 +197,7 @@ def show_global_overview(medals_only, total_medals_per_country, country_list, me
                           color_discrete_sequence=color_seq,
                           hover_data={'medals': True, 'population': True, 'medals_per_million': ':.2f'})
             fig.update_layout(height=400, yaxis_title=y_title)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
         else:
             st.error(f"Missing data for {y_val}")
     else:

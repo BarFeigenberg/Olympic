@@ -21,12 +21,12 @@ def create_host_radar_chart(medals_only, host_data, h_noc, h_year, view_mode="Al
     past_years = [y for y in country_years if y < h_year]
     future_years = [y for y in country_years if y > h_year]
     current_year = h_year if h_year in country_years else None
-    
+
     categories = list(reversed(CATEGORY_ORDER)) # Reverse for Top-to-Bottom plotting
     
     # --- Calculate Statistics per Category ---
     stats = {}
-    
+
     for cat in categories:
         # Get medals for ALL years to find Min/Max Range
         all_vals = []
@@ -46,7 +46,7 @@ def create_host_radar_chart(medals_only, host_data, h_noc, h_year, view_mode="Al
         curr_val = 0
         if current_year:
              curr_val = get_medals_by_sport_category(medals_only, h_noc, current_year).get(cat, 0)
-        
+
         # Past Avg
         p_avg = None
         if past_years:
@@ -329,25 +329,44 @@ def create_parallel_coordinates_chart(medals_only, host_data, selected_noc, focu
     return fig
 
 
-def selection_dropdown(host_data, country_ref):
-    # --- CSS FOR SELECTBOX CARD ---
-    st.markdown("""
-        <style>
-            /* Target the Selectbox container */
-            [data-testid="stSelectbox"] {
-                background-color: white;
-                padding: 10px;           /* Inner spacing */
-                border-radius: 10px;     /* Rounded corners */
-                border: 1px solid #dedede; /* Thin grey border */
-                box-shadow: 2px 2px 5px rgba(0,0,0,0.1); /* Shadow */
-            }
+def create_timeline_selector(all_years, selected_year):
+    fig = go.Figure()
 
-            /* Force the label text (title) to be dark grey */
-            [data-testid="stSelectbox"] label {
-                color: #444 !important;
-            }
-        </style>
-        """, unsafe_allow_html=True)
+    fig.add_trace(go.Scatter(
+        x=all_years,
+        y=[0] * len(all_years),
+        mode='lines+markers',
+        marker=dict(
+            size=14,
+            color=['#D4AF37' if y == selected_year else '#E0E0E0' for y in all_years],
+            line=dict(width=2, color='white')
+        ),
+        line=dict(color='#f0f0f0', width=2),
+        hoverinfo='text',
+        text=[f"Olympic Year: {y}" for y in all_years],
+    ))
+
+    fig.update_layout(
+        height=120,
+        margin=dict(l=40, r=40, t=20, b=40),
+        xaxis=dict(
+            showgrid=False,
+            showline=False,
+            zeroline=False,
+            tickmode='array',
+            tickvals=all_years,  # Force a tick for EVERY year
+            ticktext=[str(y) for y in all_years],
+            tickangle=45,  # Tilt the years so they don't collide
+            tickfont=dict(size=10, color='#666', family="Arial")
+        ),
+        yaxis=dict(showgrid=False, showline=False, zeroline=False, showticklabels=False),
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        dragmode=False  # Disable dragging to keep it stable for clicks
+    )
+
+    # Remove Plotly toolbar for a cleaner look
+    return fig.update_layout(modebar_remove=['zoom', 'pan', 'select', 'lasso2d'])
 
 
 def show_host_advantage(host_data, medals_only, country_ref):
@@ -368,7 +387,7 @@ def show_host_advantage(host_data, medals_only, country_ref):
     c_title, c_sel = st.columns([5, 2], gap="large")
 
     with c_title:
-        st.title("🏠 The Host Effect")
+        st.title("The Host Effect")
         st.markdown("Does hosting the Olympics actually guarantee more medals?")
 
     with c_sel:
@@ -392,7 +411,7 @@ def show_host_advantage(host_data, medals_only, country_ref):
         full_country_name = noc_map.get(h_noc, h_noc)
 
     # THE GLOBAL "BIG QUESTION" CHART ---
-    st.subheader("🌍 The Big Picture: Does Hosting Pay Off?")
+    st.subheader("The Big Picture: Does Hosting Pay Off?")
 
     # Calculate 'Lift %'
     host_data['lift_percent'] = (host_data['lift'] - 1) * 100
@@ -409,22 +428,33 @@ def show_host_advantage(host_data, medals_only, country_ref):
     # 1. Create Placeholder for Chart
     chart_place = st.empty()
 
-    # 2. Render GREY LINE SLIDER (CSS applied above)
-    all_years = sorted(global_chart_data['year'].unique())
+    # --- 2. RENDER TIMELINE SELECTOR (Plotly Scatter Version) ---
+    # 1. Create a complete timeline from 1896 to 2024 (every 4 years)
+    full_timeline = list(range(1896, 2025, 4))
 
-    # Determine default value (center on selection or middle of history)
-    default_year_val = all_years[len(all_years) // 2]
-    if h_year and h_year in all_years:
-        default_year_val = h_year
+    # 2. Render TIMELINE SELECTOR with the full timeline
+    if 'last_center_year' not in st.session_state:
+        st.session_state.last_center_year = h_year if h_year in full_timeline else 2024
 
-    # Use select_slider for the "timeline" look (points on a line)
-    center_year = st.select_slider(
-        "Timeline",  # Label hidden by CSS
-        options=all_years,
-        value=default_year_val
-    )
+    # Use full_timeline instead of all_years
+    timeline_fig = create_timeline_selector(full_timeline, st.session_state.last_center_year)
 
-    # 3. Calculate Window
+    selected_point = st.plotly_chart(timeline_fig, use_container_width=True, on_select="rerun", key="timeline_selector")
+
+    if selected_point and "selection" in selected_point and selected_point["selection"]["points"]:
+        new_year = selected_point["selection"]["points"][0]["x"]
+
+        # Check if it's a war year (optional: you can add a toast message)
+        war_years = [1916, 1940, 1944]
+        if new_year in war_years:
+            st.toast(f"The {new_year} Olympics were cancelled due to World War.", icon="⚠️")
+
+        if new_year != st.session_state.last_center_year:
+            st.session_state.last_center_year = new_year
+            st.rerun()
+
+    center_year = st.session_state.last_center_year
+    # 3. Calculate Window for the Bar Chart
     try:
         center_idx = global_chart_data[global_chart_data['year'] == center_year].index[0]
     except IndexError:
@@ -447,34 +477,55 @@ def show_host_advantage(host_data, medals_only, country_ref):
 
     filtered_global_data = global_chart_data.iloc[start_idx: end_idx + 1]
 
-    # 4. Generate Chart
+    # 4. Generate Enhanced Timeline Chart
     fig_global = go.Figure()
+
+    # Enhanced Bar chart with dynamic colors and borders
     fig_global.add_trace(go.Bar(
         x=filtered_global_data['year'],
         y=filtered_global_data['lift_percent'],
-        marker_color=filtered_global_data['color'],
+        marker=dict(
+            color=filtered_global_data['color'],
+            line=dict(color='white', width=1.5)  # Clean white border
+        ),
         text=filtered_global_data['host_noc'],
-        hovertemplate="<b>%{text} (%{x})</b><br>Impact: %{y:.1f}%<extra></extra>"
+        textposition="outside",
+        hovertemplate="<b>%{text} (%{x})</b><br>Performance Boost: %{y:.1f}%<extra></extra>"
     ))
 
+    # Add a reference line for "No Change" (0%)
+    fig_global.add_hline(y=0, line_dash="dash", line_color="black", line_width=1)
+
     fig_global.update_layout(
-        yaxis_title="Performance Boost (%)",
-        xaxis_title="Year",
-        height=350,
-        xaxis=dict(type='category', fixedrange=True),
-        shapes=[dict(type="line", x0=-0.5, x1=len(filtered_global_data) - 0.5, y0=0, y1=0,
-                     line=dict(color="black", width=1))]
+        yaxis_title="Boost / Drop (%)",
+        xaxis_title="",
+        height=400,  # Made it slightly taller
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        xaxis=dict(
+            type='category',
+            fixedrange=True,
+            showgrid=False,
+            tickfont=dict(size=12, family="Arial Black")
+        ),
+        yaxis=dict(
+            showgrid=True,
+            gridcolor='rgba(200, 200, 200, 0.2)',
+            zeroline=False,
+            ticksuffix="%"
+        ),
+        margin=dict(l=0, r=0, t=30, b=0)
     )
 
     # 5. Place Chart in placeholder (ABOVE slider)
     chart_place.plotly_chart(fig_global, width='stretch')
-    st.caption("Tip: Drag the grey slider above to scroll through the Olympic history.")
+    st.caption("Tip: Select the year you want to see in the middle.")
 
     st.divider()
 
     # --- RADAR CHART: Medal Distribution by Sport Category ---
     if sel_event and h_noc and h_year:
-        st.subheader(f"🎯 Medal Distribution by Sport Category: {full_country_name} - {h_year}")
+        st.subheader(f"Medal Distribution by Sport Category: {full_country_name} - {h_year}")
 
         # --- PRE-CALCULATE KPIS FOR METRICS ---
         country_history = medals_only[medals_only['noc'] == h_noc].groupby('year')['medal'].count().reset_index()
@@ -540,22 +591,27 @@ def show_host_advantage(host_data, medals_only, country_ref):
 
         with col_metrics:
             st.write("#### Performance Stats")
-            st.metric("🏅 Host Year Medals", h_medals)
-            st.metric("📊 Pre-Host Avg (12y)", f"{avg_pre:.1f}")
-            st.metric("📈 Net Gain", f"+{int(diff)}" if diff > 0 else int(diff))
-            
+            st.metric("Host Year Medals 🏅", h_medals)
+            st.metric("Pre-Host Avg (12y)", f"{avg_pre:.1f} 📊")
+            st.metric("Net Gain", f"+{int(diff)} 📈" if diff > 0 else int(diff))
             delta_color = "normal" if boost_pct > 0 else "off"
-            st.metric("🚀 Performance Boost", f"{boost_pct:.1f}%", delta=f"{boost_pct:.1f}%",
+            st.metric("Performance Boost", f"{boost_pct:.1f}%", delta=f"{boost_pct:.1f}% 🚀",
                       delta_color=delta_color)
 
     st.divider()
     if sel_event:
-        st.subheader("📊 Performance Trajectory Analysis")
+        st.subheader("Olympic Journey Timeline")
 
         col_chart, col_info = st.columns([5, 1], gap="small")
         country_years = sorted(medals_only[medals_only['noc'] == h_noc]['year'].unique())
 
         with col_info:
+            st.write("")
+            st.write("")
+            st.write("")
+            st.write("")
+            st.write("")
+            st.write("")
             focus_year = st.selectbox(
                 "Year:",
                 ["All"] + list(reversed(country_years))
@@ -582,7 +638,7 @@ def show_host_advantage(host_data, medals_only, country_ref):
                 is_host_year = focus_year_val in host_data[host_data['host_noc'] == h_noc]['year'].values
                 st.caption(f"Host: {'Yes' if is_host_year else 'No'}")
             else:
-                st.caption("Select a year to focus.")
+                st.caption("Select a year to focus on.")
 
         with col_chart:
             fig_parcoords = create_parallel_coordinates_chart(medals_only, host_data, h_noc, focus_year_val)

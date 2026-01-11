@@ -14,14 +14,14 @@ def show_wellness_winning(gap_df):
         col_title, col_controls = st.columns([3, 2], gap="medium")
 
         with col_title:
-            st.title("📈 Wellness & Winning Over Time")
+            st.title("Wellness & Winning Over Time")
 
         with col_controls:
             st.write("")
             st.write("")
             roi_mode = st.radio(
                 "Select View:",
-                ["Efficiency (Medals per Million)", "Total Impact (Total Medals)"],
+                ["Medals per Million", "Total Medals"],
                 horizontal=True,
                 label_visibility="collapsed"
             )
@@ -50,7 +50,8 @@ def show_wellness_winning(gap_df):
             tick_positions_eff = list(range(len(custom_ticks_eff)))
 
             def map_efficiency(val):
-                if val < 0: return 0
+                if val < 0:
+                    return 0
                 return np.interp(val, custom_ticks_eff, tick_positions_eff)
 
             gap_df['y_pos_efficiency'] = gap_df['medals_per_million'].apply(map_efficiency)

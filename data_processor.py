@@ -88,71 +88,69 @@ country_NOC_to_change = {
     "GDR": "GER"
 }
 
-# --- Sport Categories for Radar Chart (5 balanced categories) ---
-# --- Sport Categories for Range Chart (11 balanced categories) ---
 SPORT_CATEGORIES = {
     # 🏃 Athletics
-    "Athletics": "🏃 Athletics", 
-    
+    "Athletics": "Athletics 🏃",
+
     # 🏊 Aquatics
-    "Swimming": "🏊 Aquatics", "Diving": "🏊 Aquatics", "Water Polo": "🏊 Aquatics",
-    "Artistic Swimming": "🏊 Aquatics", "Synchronized Swimming": "🏊 Aquatics",
-    "Marathon Swimming": "🏊 Aquatics", "Marathon Swimming, Swimming": "🏊 Aquatics",
-    
+    "Swimming": "Aquatics 🏊", "Diving": "Aquatics 🏊", "Water Polo": "Aquatics 🏊",
+    "Artistic Swimming": "Aquatics 🏊", "Synchronized Swimming": "Aquatics 🏊",
+    "Marathon Swimming": "Aquatics 🏊", "Marathon Swimming, Swimming": "Aquatics 🏊",
+
     # 🤸 Gymnastics
-    "Gymnastics": "🤸 Gymnastics", "Artistic Gymnastics": "🤸 Gymnastics",
-    "Rhythmic Gymnastics": "🤸 Gymnastics", "Trampoline Gymnastics": "🤸 Gymnastics",
-    "Trampolining": "🤸 Gymnastics",
-    
+    "Gymnastics": "Gymnastics 🤸", "Artistic Gymnastics": "Gymnastics 🤸",
+    "Rhythmic Gymnastics": "Gymnastics 🤸", "Trampoline Gymnastics": "Gymnastics 🤸",
+    "Trampolining": "Gymnastics 🤸",
+
     # 🥋 Combat Sports
-    "Wrestling": "🥋 Combat Sports", "Boxing": "🥋 Combat Sports", "Judo": "🥋 Combat Sports",
-    "Fencing": "🥋 Combat Sports", "Taekwondo": "🥋 Combat Sports", "Karate": "🥋 Combat Sports",
-    
-    # ⚽ Ball Games (Team)
-    "Basketball": "⚽ Ball Games", "3x3 Basketball": "⚽ Ball Games",
-    "3x3 Basketball, Basketball": "⚽ Ball Games", "Volleyball": "⚽ Ball Games", 
-    "Beach Volleyball": "⚽ Ball Games", "Handball": "⚽ Ball Games",
-    "Football": "⚽ Ball Games", "Hockey": "⚽ Ball Games", "Rugby": "⚽ Ball Games", 
-    "Rugby Sevens": "⚽ Ball Games", "Baseball": "⚽ Ball Games", "Softball": "⚽ Ball Games",
-    "Baseball/Softball": "⚽ Ball Games", "Cricket": "⚽ Ball Games", "Lacrosse": "⚽ Ball Games",
-    "Polo": "⚽ Ball Games", "Ice Hockey": "⚽ Ball Games",
-    
+    "Wrestling": "Combat Sports 🥋", "Boxing": "Combat Sports 🥋", "Judo": "Combat Sports 🥋",
+    "Fencing": "Combat Sports 🥋", "Taekwondo": "Combat Sports 🥋", "Karate": "Combat Sports 🥋",
+
+    # ⚽ Ball Games
+    "Basketball": "Ball Games ⚽", "3x3 Basketball": "Ball Games ⚽",
+    "3x3 Basketball, Basketball": "Ball Games ⚽", "Volleyball": "Ball Games ⚽",
+    "Beach Volleyball": "Ball Games ⚽", "Handball": "Ball Games ⚽",
+    "Football": "Ball Games ⚽", "Hockey": "Ball Games ⚽", "Rugby": "Ball Games ⚽",
+    "Rugby Sevens": "Ball Games ⚽", "Baseball": "Ball Games ⚽", "Softball": "Ball Games ⚽",
+    "Baseball/Softball": "Ball Games ⚽", "Cricket": "Ball Games ⚽", "Lacrosse": "Ball Games ⚽",
+    "Polo": "Ball Games ⚽", "Ice Hockey": "Ball Games ⚽",
+
     # 🏸 Racquet Sports
-    "Tennis": "🏸 Racquet Sports", "Badminton": "🏸 Racquet Sports",
-    "Table Tennis": "🏸 Racquet Sports", "Basque Pelota": "🏸 Racquet Sports",
-    "Racquets": "🏸 Racquet Sports", "Jeu De Paume": "🏸 Racquet Sports",
-    
+    "Tennis": "Racquet Sports 🏸", "Badminton": "Racquet Sports 🏸",
+    "Table Tennis": "Racquet Sports 🏸", "Basque Pelota": "Racquet Sports 🏸",
+    "Racquets": "Racquet Sports 🏸", "Jeu De Paume": "Racquet Sports 🏸",
+
     # 🚴 Cycling
-    "Cycling": "🚴 Cycling", "Cycling BMX Freestyle": "🚴 Cycling",
-    "Cycling BMX Racing": "🚴 Cycling", "Cycling Mountain Bike": "🚴 Cycling",
-    "Cycling Road": "🚴 Cycling", "Cycling Road, Cycling Mountain Bike": "🚴 Cycling",
-    "Cycling Road, Cycling Track": "🚴 Cycling", "Cycling Road, Triathlon": "🚴 Cycling",
-    "Cycling Track": "🚴 Cycling", "BMX": "🚴 Cycling",
-    
-    # 🚣 Water Sports (Non-Pool)
-    "Rowing": "🚣 Water Sports", "Canoeing": "🚣 Water Sports",
-    "Canoe Slalom": "🚣 Water Sports", "Canoe Sprint": "🚣 Water Sports",
-    "Sailing": "🚣 Water Sports", "Surfing": "🚣 Water Sports", "Motorboating": "🚣 Water Sports",
-    
+    "Cycling": "Cycling 🚴", "Cycling BMX Freestyle": "Cycling 🚴",
+    "Cycling BMX Racing": "Cycling 🚴", "Cycling Mountain Bike": "Cycling 🚴",
+    "Cycling Road": "Cycling 🚴", "Cycling Road, Cycling Mountain Bike": "Cycling 🚴",
+    "Cycling Road, Cycling Track": "Cycling 🚴", "Cycling Road, Triathlon": "Cycling 🚴",
+    "Cycling Track": "Cycling 🚴", "BMX": "Cycling 🚴",
+
+    # 🚣 Water Sports
+    "Rowing": "Water Sports 🚣", "Canoeing": "Water Sports 🚣",
+    "Canoe Slalom": "Water Sports 🚣", "Canoe Sprint": "Water Sports 🚣",
+    "Sailing": "Water Sports 🚣", "Surfing": "Water Sports 🚣", "Motorboating": "Water Sports 🚣",
+
     # 🎯 Target Sports
-    "Shooting": "🎯 Target Sports", "Archery": "🎯 Target Sports", "Golf": "🎯 Target Sports",
-    
+    "Shooting": "Target Sports 🎯", "Archery": "Target Sports 🎯", "Golf": "Target Sports 🎯",
+
     # 🏋️ Strength & Weight
-    "Weightlifting": "🏋️ Strength & Weight", "Tug-Of-War": "🏋️ Strength & Weight",
-    
-    # 🐎 Misc & Modern
-    "Triathlon": "🧗 Misc & Modern", "Modern Pentathlon": "🧗 Misc & Modern",
-    "Equestrian": "🧗 Misc & Modern", "Equestrianism": "🧗 Misc & Modern",
-    "Skateboarding": "🧗 Misc & Modern", "Sport Climbing": "🧗 Misc & Modern",
-    "Breaking": "🧗 Misc & Modern", "Figure Skating": "🧗 Misc & Modern",
-    "Art Competitions": "🧗 Misc & Modern", "Aeronautics": "🧗 Misc & Modern",
-    "Alpinism": "🧗 Misc & Modern", "Croquet": "🧗 Misc & Modern", "Roque": "🧗 Misc & Modern"
+    "Weightlifting": "Strength & Weight 🏋️", "Tug-Of-War": "Strength & Weight 🏋️",
+
+    # 🧗 General Sport
+    "Triathlon": "Misc & Modern 🧗", "Modern Pentathlon": "Misc & Modern 🧗",
+    "Equestrian": "Misc & Modern 🧗", "Equestrianism": "Misc & Modern 🧗",
+    "Skateboarding": "Misc & Modern 🧗", "Sport Climbing": "Misc & Modern 🧗",
+    "Breaking": "Misc & Modern 🧗", "Figure Skating": "Misc & Modern 🧗",
+    "Art Competitions": "Misc & Modern 🧗", "Aeronautics": "Misc & Modern 🧗",
+    "Alpinism": "Misc & Modern 🧗", "Croquet": "Misc & Modern 🧗", "Roque": "Misc & Modern 🧗"
 }
 
 CATEGORY_ORDER = [
-    "🏃 Athletics", "🏊 Aquatics", "🤸 Gymnastics", "🥋 Combat Sports", 
-    "⚽ Ball Games", "🏸 Racquet Sports", "🚴 Cycling", "🚣 Water Sports",
-    "🎯 Target Sports", "🏋️ Strength & Weight", "🧗 Misc & Modern"
+    "Athletics 🏃", "Aquatics 🏊", "Gymnastics 🤸", "Combat Sports 🥋",
+    "Ball Games ⚽", "Racquet Sports🏸", "Cycling 🚴", "Water Sports 🚣",
+    "Target Sports 🎯", "️Strength & Weight 🏋", "Misc & Modern 🧗"
 ]
 
 
