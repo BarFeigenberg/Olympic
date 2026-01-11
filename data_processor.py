@@ -7,7 +7,7 @@ from data_loader import *
 country_names_to_change = {
     # Standardization fixes
     "Chinese Taipei": "Taiwan",
-    "Côte d'Ivoire": "Ivory Coast",
+    "C├┤te d'Ivoire": "Ivory Coast",
     "Democratic People's Republic of Korea": "North Korea",
     "Federated States of Micronesia": "Micronesia",
     "Hong Kong, China": "Hong Kong",
@@ -28,14 +28,14 @@ country_names_to_change = {
     "Russian Federation": "Russia",
     "Russian Olympic Committee": "Russia",
     "Saar": "Germany",
-    "Sֳ£o Tomֳ© and Prֳ­ncipe": "Sao Tome and Principe",
-    "São Tomé and Príncipe": "Sao Tome and Principe",
+    "S╓│┬úo Tom╓│┬⌐ and Pr╓│┬¡ncipe": "Sao Tome and Principe",
+    "S├úo Tom├⌐ and Pr├¡ncipe": "Sao Tome and Principe",
     "Serbia and Montenegro": "Serbia",
     "South Vietnam": "Vietnam",
     "South Yemen": "Yemen",
     "Syrian Arab Republic": "Syria",
-    "Tֳ¼rkiye": "Turkey",
-    "Türkiye": "Turkey",
+    "T╓│┬╝rkiye": "Turkey",
+    "T├╝rkiye": "Turkey",
     "United Arab Republic": "Egypt",
     "United Republic of Tanzania": "Tanzania",
     "United States Virgin Islands": "US Virgin Islands",
@@ -88,69 +88,71 @@ country_NOC_to_change = {
     "GDR": "GER"
 }
 
+# --- Sport Categories for Radar Chart (5 balanced categories) ---
+# --- Sport Categories for Range Chart (11 balanced categories) ---
 SPORT_CATEGORIES = {
-    # 🏃 Athletics
-    "Athletics": "Athletics 🏃",
+    # ≡ƒÅâ Athletics
+    "Athletics": "≡ƒÅâ Athletics",
 
-    # 🏊 Aquatics
-    "Swimming": "Aquatics 🏊", "Diving": "Aquatics 🏊", "Water Polo": "Aquatics 🏊",
-    "Artistic Swimming": "Aquatics 🏊", "Synchronized Swimming": "Aquatics 🏊",
-    "Marathon Swimming": "Aquatics 🏊", "Marathon Swimming, Swimming": "Aquatics 🏊",
+    # ≡ƒÅè Aquatics
+    "Swimming": "≡ƒÅè Aquatics", "Diving": "≡ƒÅè Aquatics", "Water Polo": "≡ƒÅè Aquatics",
+    "Artistic Swimming": "≡ƒÅè Aquatics", "Synchronized Swimming": "≡ƒÅè Aquatics",
+    "Marathon Swimming": "≡ƒÅè Aquatics", "Marathon Swimming, Swimming": "≡ƒÅè Aquatics",
 
-    # 🤸 Gymnastics
-    "Gymnastics": "Gymnastics 🤸", "Artistic Gymnastics": "Gymnastics 🤸",
-    "Rhythmic Gymnastics": "Gymnastics 🤸", "Trampoline Gymnastics": "Gymnastics 🤸",
-    "Trampolining": "Gymnastics 🤸",
+    # ≡ƒñ╕ Gymnastics
+    "Gymnastics": "≡ƒñ╕ Gymnastics", "Artistic Gymnastics": "≡ƒñ╕ Gymnastics",
+    "Rhythmic Gymnastics": "≡ƒñ╕ Gymnastics", "Trampoline Gymnastics": "≡ƒñ╕ Gymnastics",
+    "Trampolining": "≡ƒñ╕ Gymnastics",
 
-    # 🥋 Combat Sports
-    "Wrestling": "Combat Sports 🥋", "Boxing": "Combat Sports 🥋", "Judo": "Combat Sports 🥋",
-    "Fencing": "Combat Sports 🥋", "Taekwondo": "Combat Sports 🥋", "Karate": "Combat Sports 🥋",
+    # ≡ƒÑï Combat Sports
+    "Wrestling": "≡ƒÑï Combat Sports", "Boxing": "≡ƒÑï Combat Sports", "Judo": "≡ƒÑï Combat Sports",
+    "Fencing": "≡ƒÑï Combat Sports", "Taekwondo": "≡ƒÑï Combat Sports", "Karate": "≡ƒÑï Combat Sports",
 
-    # ⚽ Ball Games
-    "Basketball": "Ball Games ⚽", "3x3 Basketball": "Ball Games ⚽",
-    "3x3 Basketball, Basketball": "Ball Games ⚽", "Volleyball": "Ball Games ⚽",
-    "Beach Volleyball": "Ball Games ⚽", "Handball": "Ball Games ⚽",
-    "Football": "Ball Games ⚽", "Hockey": "Ball Games ⚽", "Rugby": "Ball Games ⚽",
-    "Rugby Sevens": "Ball Games ⚽", "Baseball": "Ball Games ⚽", "Softball": "Ball Games ⚽",
-    "Baseball/Softball": "Ball Games ⚽", "Cricket": "Ball Games ⚽", "Lacrosse": "Ball Games ⚽",
-    "Polo": "Ball Games ⚽", "Ice Hockey": "Ball Games ⚽",
+    # ΓÜ╜ Ball Games (Team)
+    "Basketball": "ΓÜ╜ Ball Games", "3x3 Basketball": "ΓÜ╜ Ball Games",
+    "3x3 Basketball, Basketball": "ΓÜ╜ Ball Games", "Volleyball": "ΓÜ╜ Ball Games",
+    "Beach Volleyball": "ΓÜ╜ Ball Games", "Handball": "ΓÜ╜ Ball Games",
+    "Football": "ΓÜ╜ Ball Games", "Hockey": "ΓÜ╜ Ball Games", "Rugby": "ΓÜ╜ Ball Games",
+    "Rugby Sevens": "ΓÜ╜ Ball Games", "Baseball": "ΓÜ╜ Ball Games", "Softball": "ΓÜ╜ Ball Games",
+    "Baseball/Softball": "ΓÜ╜ Ball Games", "Cricket": "ΓÜ╜ Ball Games", "Lacrosse": "ΓÜ╜ Ball Games",
+    "Polo": "ΓÜ╜ Ball Games", "Ice Hockey": "ΓÜ╜ Ball Games",
 
-    # 🏸 Racquet Sports
-    "Tennis": "Racquet Sports 🏸", "Badminton": "Racquet Sports 🏸",
-    "Table Tennis": "Racquet Sports 🏸", "Basque Pelota": "Racquet Sports 🏸",
-    "Racquets": "Racquet Sports 🏸", "Jeu De Paume": "Racquet Sports 🏸",
+    # ≡ƒÅ╕ Racquet Sports
+    "Tennis": "≡ƒÅ╕ Racquet Sports", "Badminton": "≡ƒÅ╕ Racquet Sports",
+    "Table Tennis": "≡ƒÅ╕ Racquet Sports", "Basque Pelota": "≡ƒÅ╕ Racquet Sports",
+    "Racquets": "≡ƒÅ╕ Racquet Sports", "Jeu De Paume": "≡ƒÅ╕ Racquet Sports",
 
-    # 🚴 Cycling
-    "Cycling": "Cycling 🚴", "Cycling BMX Freestyle": "Cycling 🚴",
-    "Cycling BMX Racing": "Cycling 🚴", "Cycling Mountain Bike": "Cycling 🚴",
-    "Cycling Road": "Cycling 🚴", "Cycling Road, Cycling Mountain Bike": "Cycling 🚴",
-    "Cycling Road, Cycling Track": "Cycling 🚴", "Cycling Road, Triathlon": "Cycling 🚴",
-    "Cycling Track": "Cycling 🚴", "BMX": "Cycling 🚴",
+    # ≡ƒÜ┤ Cycling
+    "Cycling": "≡ƒÜ┤ Cycling", "Cycling BMX Freestyle": "≡ƒÜ┤ Cycling",
+    "Cycling BMX Racing": "≡ƒÜ┤ Cycling", "Cycling Mountain Bike": "≡ƒÜ┤ Cycling",
+    "Cycling Road": "≡ƒÜ┤ Cycling", "Cycling Road, Cycling Mountain Bike": "≡ƒÜ┤ Cycling",
+    "Cycling Road, Cycling Track": "≡ƒÜ┤ Cycling", "Cycling Road, Triathlon": "≡ƒÜ┤ Cycling",
+    "Cycling Track": "≡ƒÜ┤ Cycling", "BMX": "≡ƒÜ┤ Cycling",
 
-    # 🚣 Water Sports
-    "Rowing": "Water Sports 🚣", "Canoeing": "Water Sports 🚣",
-    "Canoe Slalom": "Water Sports 🚣", "Canoe Sprint": "Water Sports 🚣",
-    "Sailing": "Water Sports 🚣", "Surfing": "Water Sports 🚣", "Motorboating": "Water Sports 🚣",
+    # ≡ƒÜú Water Sports (Non-Pool)
+    "Rowing": "≡ƒÜú Water Sports", "Canoeing": "≡ƒÜú Water Sports",
+    "Canoe Slalom": "≡ƒÜú Water Sports", "Canoe Sprint": "≡ƒÜú Water Sports",
+    "Sailing": "≡ƒÜú Water Sports", "Surfing": "≡ƒÜú Water Sports", "Motorboating": "≡ƒÜú Water Sports",
 
-    # 🎯 Target Sports
-    "Shooting": "Target Sports 🎯", "Archery": "Target Sports 🎯", "Golf": "Target Sports 🎯",
+    # ≡ƒÄ» Target Sports
+    "Shooting": "≡ƒÄ» Target Sports", "Archery": "≡ƒÄ» Target Sports", "Golf": "≡ƒÄ» Target Sports",
 
-    # 🏋️ Strength & Weight
-    "Weightlifting": "Strength & Weight 🏋️", "Tug-Of-War": "Strength & Weight 🏋️",
+    # ≡ƒÅï∩╕Å Strength & Weight
+    "Weightlifting": "≡ƒÅï∩╕Å Strength & Weight", "Tug-Of-War": "≡ƒÅï∩╕Å Strength & Weight",
 
-    # 🧗 General Sport
-    "Triathlon": "General Sport 🧗", "Modern Pentathlon": "General Sport 🧗",
-    "Equestrian": "General Sport 🧗", "Equestrianism": "General Sport 🧗",
-    "Skateboarding": "General Sport 🧗", "Sport Climbing": "General Sport 🧗",
-    "Breaking": "General Sport 🧗", "Figure Skating": "General Sport 🧗",
-    "Art Competitions": "General Sport 🧗", "Aeronautics": "General Sport 🧗",
-    "Alpinism": "General Sport 🧗", "Croquet": "General Sport 🧗", "Roque": "General Sport 🧗"
+    # ≡ƒÉÄ Misc & Modern
+    "Triathlon": "≡ƒºù Misc & Modern", "Modern Pentathlon": "≡ƒºù Misc & Modern",
+    "Equestrian": "≡ƒºù Misc & Modern", "Equestrianism": "≡ƒºù Misc & Modern",
+    "Skateboarding": "≡ƒºù Misc & Modern", "Sport Climbing": "≡ƒºù Misc & Modern",
+    "Breaking": "≡ƒºù Misc & Modern", "Figure Skating": "≡ƒºù Misc & Modern",
+    "Art Competitions": "≡ƒºù Misc & Modern", "Aeronautics": "≡ƒºù Misc & Modern",
+    "Alpinism": "≡ƒºù Misc & Modern", "Croquet": "≡ƒºù Misc & Modern", "Roque": "≡ƒºù Misc & Modern"
 }
 
 CATEGORY_ORDER = [
-    "Athletics 🏃", "Aquatics 🏊", "Gymnastics 🤸", "Combat Sports 🥋",
-    "Ball Games ⚽", "Racquet Sports🏸", "Cycling 🚴", "Water Sports 🚣",
-    "Target Sports 🎯", "️Strength & Weight 🏋", "General Sport 🧗"
+    "≡ƒÅâ Athletics", "≡ƒÅè Aquatics", "≡ƒñ╕ Gymnastics", "≡ƒÑï Combat Sports",
+    "ΓÜ╜ Ball Games", "≡ƒÅ╕ Racquet Sports", "≡ƒÜ┤ Cycling", "≡ƒÜú Water Sports",
+    "≡ƒÄ» Target Sports", "≡ƒÅï∩╕Å Strength & Weight", "≡ƒºù Misc & Modern"
 ]
 
 
@@ -288,8 +290,7 @@ def create_host_advantage_file():
 @st.cache_data
 def get_processed_country_data():
     countries = load_raw_country_data()
-    if countries.empty:
-        return pd.DataFrame()
+    if countries.empty: return pd.DataFrame()
 
     countries.columns = countries.columns.str.lower()
 
@@ -366,8 +367,95 @@ def get_continent_mapping():
 @st.cache_data
 def get_processed_athletics_data():
     df = load_raw_athletics_data()
-    # Normalize columns to lowercase immediately to match 'result', 'event', 'nationality' keys used below
-    df.columns = df.columns.str.lower()
+
+    meet_records = [
+        {'gender': 'M', 'event': '100M', 'location': 'London', 'year': 2012, 'medal': 'G', 'name': 'Usain Bolt',
+         'nationality': 'JAM', 'result': '9.63'},
+        {'gender': 'M', 'event': '200M', 'location': 'Beijing', 'year': 2008, 'medal': 'G', 'name': 'Usain Bolt',
+         'nationality': 'JAM', 'result': '19.30'},
+        {'gender': 'M', 'event': '400M', 'location': 'Rio', 'year': 2016, 'medal': 'G', 'name': 'Wayde van Niekerk',
+         'nationality': 'RSA', 'result': '43.03'},
+        {'gender': 'M', 'event': '800M', 'location': 'Paris', 'year': 2024, 'medal': 'G', 'name': 'Emmanuel Wanyonyi',
+         'nationality': 'KEN', 'result': '1:41.19'},
+        {'gender': 'M', 'event': '1500M', 'location': 'Paris', 'year': 2024, 'medal': 'G', 'name': 'Cole Hocker',
+         'nationality': 'USA', 'result': '3:27.65'},
+        {'gender': 'M', 'event': '3000M Steeplechase', 'location': 'Rio', 'year': 2016, 'medal': 'G',
+         'name': 'Conseslus Kipruto', 'nationality': 'KEN', 'result': '8:03.28'},
+        {'gender': 'M', 'event': '5000M', 'location': 'Beijing', 'year': 2008, 'medal': 'G', 'name': 'Kenenisa Bekele',
+         'nationality': 'ETH', 'result': '12:57.82'},
+        {'gender': 'M', 'event': '10,000M', 'location': 'Paris', 'year': 2024, 'medal': 'G', 'name': 'Joshua Cheptegei',
+         'nationality': 'UGA', 'result': '26:43.14'},
+        {'gender': 'M', 'event': '110M Hurdles', 'location': 'Athens', 'year': 2004, 'medal': 'G', 'name': 'Xiang Liu',
+         'nationality': 'CHN', 'result': '12.91'},
+        {'gender': 'M', 'event': '400M Hurdles', 'location': 'Tokyo', 'year': 2020, 'medal': 'G',
+         'name': 'Karsten Warholm', 'nationality': 'NOR', 'result': '45.94'},
+        {'gender': 'M', 'event': 'High Jump', 'location': 'Atlanta', 'year': 1996, 'medal': 'G',
+         'name': 'Charles Austin', 'nationality': 'USA', 'result': '2.39'},
+        {'gender': 'M', 'event': 'Pole Vault', 'location': 'Paris', 'year': 2024, 'medal': 'G',
+         'name': 'Mondo Duplantis', 'nationality': 'SWE', 'result': '6.25'},
+        {'gender': 'M', 'event': 'Long Jump', 'location': 'Mexico City', 'year': 1968, 'medal': 'G',
+         'name': 'Bob Beamon', 'nationality': 'USA', 'result': '8.90'},
+        {'gender': 'M', 'event': 'Triple Jump', 'location': 'Atlanta', 'year': 1996, 'medal': 'G',
+         'name': 'Kenny Harrison', 'nationality': 'USA', 'result': '18.09'},
+        {'gender': 'M', 'event': 'Shot Put', 'location': 'Tokyo', 'year': 2020, 'medal': 'G', 'name': 'Ryan Crouser',
+         'nationality': 'USA', 'result': '23.30'},
+        {'gender': 'M', 'event': 'Discus Throw', 'location': 'Paris', 'year': 2024, 'medal': 'G', 'name': 'Roje Stona',
+         'nationality': 'JAM', 'result': '70.00'},
+        {'gender': 'M', 'event': 'Hammer Throw', 'location': 'Seoul', 'year': 1988, 'medal': 'G',
+         'name': 'Sergey Litvinov', 'nationality': 'URS', 'result': '84.80'},
+        {'gender': 'M', 'event': 'Javelin Throw', 'location': 'Paris', 'year': 2024, 'medal': 'G',
+         'name': 'Arshad Nadeem', 'nationality': 'PAK', 'result': '92.97'},
+        {'gender': 'M', 'event': 'Decathlon', 'location': 'Tokyo', 'year': 2020, 'medal': 'G', 'name': 'Damian Warner',
+         'nationality': 'CAN', 'result': '9018'},
+        {'gender': 'W', 'event': '100M', 'location': 'Tokyo', 'year': 2020, 'medal': 'G',
+         'name': 'Elaine Thompson-Herah', 'nationality': 'JAM', 'result': '10.61'},
+        {'gender': 'W', 'event': '200M', 'location': 'Seoul', 'year': 1988, 'medal': 'G',
+         'name': 'Florence Griffith Joyner', 'nationality': 'USA', 'result': '21.34'},
+        {'gender': 'W', 'event': '400M', 'location': 'Paris', 'year': 2024, 'medal': 'G', 'name': 'Marileidy Paulino',
+         'nationality': 'DOM', 'result': '48.17'},
+        {'gender': 'W', 'event': '800M', 'location': 'Moscow', 'year': 1980, 'medal': 'G',
+         'name': 'Nadezhda Olizarenko', 'nationality': 'URS', 'result': '1:53.43'},
+        {'gender': 'W', 'event': '1500M', 'location': 'Paris', 'year': 2024, 'medal': 'G', 'name': 'Faith Kipyegon',
+         'nationality': 'KEN', 'result': '3:51.29'},
+        {'gender': 'W', 'event': '3000M Steeplechase', 'location': 'Paris', 'year': 2024, 'medal': 'G',
+         'name': 'Winfred Yavi', 'nationality': 'BRN', 'result': '8:52.76'},
+        {'gender': 'W', 'event': '5000M', 'location': 'Rio', 'year': 2016, 'medal': 'G', 'name': 'Vivian Cheruiyot',
+         'nationality': 'KEN', 'result': '14:26.17'},
+        {'gender': 'W', 'event': '10,000M', 'location': 'Rio', 'year': 2016, 'medal': 'G', 'name': 'Almaz Ayana',
+         'nationality': 'ETH', 'result': '29:17.45'},
+        {'gender': 'W', 'event': '100M Hurdles', 'location': 'Tokyo', 'year': 2020, 'medal': 'G',
+         'name': 'Jasmine Camacho-Quinn', 'nationality': 'PUR', 'result': '12.26'},
+        {'gender': 'W', 'event': '400M Hurdles', 'location': 'Paris', 'year': 2024, 'medal': 'G',
+         'name': 'Sydney McLaughlin-Levrone', 'nationality': 'USA', 'result': '50.37'},
+        {'gender': 'W', 'event': 'High Jump', 'location': 'Athens', 'year': 2004, 'medal': 'G',
+         'name': 'Yelena Slesarenko', 'nationality': 'RUS', 'result': '2.06'},
+        {'gender': 'W', 'event': 'Pole Vault', 'location': 'Beijing', 'year': 2008, 'medal': 'G',
+         'name': 'Yelena Isinbaeva', 'nationality': 'RUS', 'result': '5.05'},
+        {'gender': 'W', 'event': 'Long Jump', 'location': 'Seoul', 'year': 1988, 'medal': 'G',
+         'name': 'Jackie Joyner-Kersee', 'nationality': 'USA', 'result': '7.40'},
+        {'gender': 'W', 'event': 'Triple Jump', 'location': 'Tokyo', 'year': 2020, 'medal': 'G',
+         'name': 'Yulimar Rojas', 'nationality': 'VEN', 'result': '15.67'},
+        {'gender': 'W', 'event': 'Shot Put', 'location': 'Moscow', 'year': 1980, 'medal': 'G',
+         'name': 'Ilona Slupianek', 'nationality': 'GDR', 'result': '22.41'},
+        {'gender': 'W', 'event': 'Discus Throw', 'location': 'Seoul', 'year': 1988, 'medal': 'G',
+         'name': 'Martina Hellmann', 'nationality': 'GDR', 'result': '72.30'},
+        {'gender': 'W', 'event': 'Hammer Throw', 'location': 'Rio', 'year': 2016, 'medal': 'G',
+         'name': 'Anita W┼éodarczyk', 'nationality': 'POL', 'result': '82.29'},
+        {'gender': 'W', 'event': 'Javelin Throw', 'location': 'Athens', 'year': 2004, 'medal': 'G',
+         'name': 'Osleidys Men├⌐ndez', 'nationality': 'CUB', 'result': '71.53'},
+        {'gender': 'W', 'event': 'Heptathlon', 'location': 'Seoul', 'year': 1988, 'medal': 'G',
+         'name': 'Jackie Joyner-Kersee', 'nationality': 'USA', 'result': '7291'}
+    ]
+
+    records_df = pd.DataFrame(meet_records)
+
+    if df.empty:
+        df = records_df
+    else:
+        df.columns = df.columns.str.lower()
+        df = pd.concat([df, records_df], ignore_index=True)
+
+    df = df.drop_duplicates(subset=['gender', 'event', 'year', 'result'], keep='last')
 
     df.drop(columns=['extra'], inplace=True, errors='ignore')
     ref = get_name_map()
@@ -414,8 +502,7 @@ def get_processed_medals_data():
     df_paris_medals = load_raw_paris_data()
     countries = get_processed_country_data()
 
-    if df_medals.empty:
-        return pd.DataFrame()
+    if df_medals.empty: return pd.DataFrame()
 
     df_medals.columns = df_medals.columns.str.lower()
     if not df_paris_medals.empty:
@@ -469,58 +556,176 @@ def get_processed_medals_data():
 # --- 4. Population Processor ---
 @st.cache_data
 def get_combined_population_data():
-    # 1. Load Historical Data
-    hist_df = load_historical_population_data()
-    if not hist_df.empty:
-        # Expected cols: Entity, Code, Year, Population (historical)
-        # Rename to standard
-        hist_df = hist_df.rename(columns={
-            'Entity': 'country',
-            'Year': 'year',
-            'Population (historical)': 'population'
-        })
-        hist_df = hist_df[['country', 'year', 'population']]
+    """
+    Merges historical population data with a specific 2024 update file.
+    - Historical data is used for years < 2024.
+    - New file is used EXCLUSIVELY for 2024.
+    """
+    # Load raw datasets
+    hist_pop = load_historical_population_data()
+    curr_pop = load_2024_population_data()
 
-    # 2. Load 2024 Data
-    df_2024 = load_2024_population_data()
-    processed_2024 = []
+    # --- 1. Process Historical Data ---
+    if hist_pop.empty:
+        # If historical data is missing, create an empty structure
+        combined_df = pd.DataFrame(columns=['country', 'year', 'population', 'iso'])
+    else:
+        # Normalize column names
+        hist_pop.columns = hist_pop.columns.str.lower().str.strip()
 
-    if not df_2024.empty:
-        # Check standard columns from WEO file
-        # 'Country', 'Scale', '2024'
-        if 'Country' in df_2024.columns and '2024' in df_2024.columns:
-            # Create a copy to match standard structure
-            temp = df_2024[['Country', 'Scale', '2024']].copy()
-            temp = temp.rename(columns={'Country': 'country'})
+        # Rename columns to standard format
+        rename_dict = {}
+        if 'entity' in hist_pop.columns: rename_dict['entity'] = 'country'
+        if 'code' in hist_pop.columns: rename_dict['code'] = 'iso'
 
-            # Handle Scaling (Millions)
-            # Ensure '2024' is numeric
-            temp['2024'] = pd.to_numeric(temp['2024'], errors='coerce')
+        # Identify population column in historical data
+        pop_col = next((c for c in hist_pop.columns if 'population' in c), None)
+        if pop_col: rename_dict[pop_col] = 'population'
 
-            def scale_pop(row):
-                val = row['2024']
-                scale = str(row['Scale']).lower()
-                if pd.isna(val):
-                    return 0
-                if 'million' in scale:
-                    return val * 1_000_000
-                return val
+        hist_pop = hist_pop.rename(columns=rename_dict)
 
-            temp['population'] = temp.apply(scale_pop, axis=1)
-            temp['year'] = 2024
+        # Apply country name standardization
+        if 'country' in hist_pop.columns:
+            hist_pop['country'] = hist_pop['country'].replace(country_names_to_change)
 
-            processed_2024 = temp[['country', 'year', 'population']]
+        # Select only relevant columns
+        combined_df = hist_pop[['country', 'year', 'population', 'iso']].copy()
 
-    # 3. Combine
-    if hist_df.empty and isinstance(processed_2024, list):
+        # Remove any existing 2024 data from history to prefer the new file
+        combined_df = combined_df[combined_df['year'] != 2024]
+
+    # --- 2. Process New 2024 Data ---
+    if not curr_pop.empty:
+        # Normalize columns
+        curr_pop.columns = curr_pop.columns.str.lower().str.strip()
+
+        # A. Identify 'Country' Column
+        country_col = None
+        possible_country_names = ['country', 'name', 'nation', 'entity']
+
+        # Try finding exact name match
+        for col in curr_pop.columns:
+            if col in possible_country_names:
+                country_col = col
+                break
+
+        # Fallback: Find first text-based column
+        if not country_col:
+            for col in curr_pop.columns:
+                if curr_pop[col].dtype == object:
+                    country_col = col
+                    break
+
+        # B. Identify 'Year' Column
+        year_col = None
+        if 'year' in curr_pop.columns:
+            year_col = 'year'
+
+        # C. Identify 'Population' Column
+        # Look for 'population', 'pop', '2024', or take the first numeric column that isn't the year
+        pop_col = None
+        possible_pop_names = ['population', 'pop', 'total', '2024']
+
+        # Try explicit match
+        for col in curr_pop.columns:
+            if any(x in col for x in possible_pop_names) and col != year_col:
+                pop_col = col
+                break
+
+        # Fallback: Find first numeric column that is NOT the year
+        if not pop_col:
+            for col in curr_pop.columns:
+                # Check if numeric and not the identified year column
+                is_numeric = pd.api.types.is_numeric_dtype(curr_pop[col])
+                if is_numeric and col != year_col:
+                    pop_col = col
+                    break
+
+        # --- D. Clean and Format New Data ---
+        if country_col and pop_col:
+            # Create a clean subset
+            new_data = pd.DataFrame()
+            new_data['country'] = curr_pop[country_col]
+
+            # Handle Year: If exists, use it. If not, force 2024.
+            if year_col:
+                new_data['year'] = pd.to_numeric(curr_pop[year_col], errors='coerce')
+            else:
+                new_data['year'] = 2024
+
+            # Handle Population: Clean string formatting (remove commas)
+            if curr_pop[pop_col].dtype == object:
+                new_data['population'] = curr_pop[pop_col].astype(str).str.replace(',', '').apply(pd.to_numeric,
+                                                                                                  errors='coerce')
+            else:
+                new_data['population'] = pd.to_numeric(curr_pop[pop_col], errors='coerce')
+
+            # --- CRITICAL FIX: Scale population by 1M if 'Scale' column says 'Millions' ---
+            scale_col = next((c for c in curr_pop.columns if 'scale' in c.lower()), None)
+            if scale_col:
+                # The Scale column contains 'Millions', so we multiply by 1,000,000
+                scale_values = curr_pop[scale_col].astype(str).str.lower()
+                is_millions = scale_values.str.contains('million', na=False)
+                new_data.loc[is_millions, 'population'] = new_data.loc[is_millions, 'population'] * 1_000_000
+
+            # Filter ONLY for 2024 (as requested)
+            new_data = new_data[new_data['year'] == 2024].copy()
+
+            # Standardize country names
+            new_data['country'] = new_data['country'].str.strip()
+            new_data['country'] = new_data['country'].replace(country_names_to_change)
+
+            # Attempt to map ISO codes from history
+            if not combined_df.empty and 'iso' in combined_df.columns:
+                iso_map = combined_df.dropna(subset=['iso']).set_index('country')['iso'].to_dict()
+                new_data['iso'] = new_data['country'].map(iso_map)
+            else:
+                new_data['iso'] = np.nan
+
+            # Append new 2024 data to the historical data
+            combined_df = pd.concat([combined_df, new_data], ignore_index=True)
+
+    # --- 3. Final Cleanup & Interpolation ---
+    combined_df['year'] = combined_df['year'].astype(int)
+
+    # Sort to ensure correct interpolation order
+    combined_df = combined_df.sort_values(['country', 'year'])
+
+    # Remove duplicates: keep the last entry (prioritizing the new file if overlap exists)
+    combined_df = combined_df.drop_duplicates(subset=['country', 'year'], keep='last')
+
+    # Interpolate missing years (fills gaps between history and 2024)
+    min_year, max_year = 1896, 2024
+    all_years = list(range(min_year, max_year + 1))
+    olympic_years = list(range(min_year, max_year + 1, 4))
+
+    processed_dfs = []
+
+    for country, group in combined_df.groupby('country'):
+        group = group.set_index('year')
+        # Reindex to include all years for interpolation
+        new_index = sorted(list(set(all_years) | set(group.index)))
+        group = group.reindex(new_index)
+
+        # Linear interpolation
+        group['population'] = group['population'].interpolate(method='linear', limit_direction='both')
+        group['country'] = country
+
+        # Fill ISO forward/backward
+        if 'iso' in group.columns:
+            group['iso'] = group['iso'].ffill().bfill()
+
+        # Filter only Olympic years
+        olympic_data = group.loc[group.index.isin(olympic_years)].reset_index()
+        processed_dfs.append(olympic_data)
+
+    if not processed_dfs:
         return pd.DataFrame()
 
-    if isinstance(processed_2024, pd.DataFrame) and not processed_2024.empty:
-        combined = pd.concat([hist_df, processed_2024], ignore_index=True)
-    else:
-        combined = hist_df
+    final_df = pd.concat(processed_dfs, ignore_index=True)
+    final_df = final_df.rename(columns={'index': 'year'})
 
-    return combined
+    return final_df
 
 
 # --- 5. Life Expectancy Processor (Wide Format Fix) ---
@@ -626,62 +831,6 @@ def calculate_medals_per_million(df):
 
 
 @st.cache_data
-def get_combined_population_data():
-    # 1. Load Historical Data
-    hist_df = load_historical_population_data()
-    if not hist_df.empty:
-        # Expected cols: Entity, Code, Year, Population (historical)
-        # Rename to standard
-        hist_df = hist_df.rename(columns={
-            'Entity': 'country',
-            'Year': 'year',
-            'Population (historical)': 'population'
-        })
-        hist_df = hist_df[['country', 'year', 'population']]
-    
-    # 2. Load 2024 Data
-    df_2024 = load_2024_population_data()
-    processed_2024 = []
-    
-    if not df_2024.empty:
-        # Check standard columns from WEO file
-        # 'Country', 'Scale', '2024'
-        if 'Country' in df_2024.columns and '2024' in df_2024.columns:
-            # Create a copy to match standard structure
-            temp = df_2024[['Country', 'Scale', '2024']].copy()
-            temp = temp.rename(columns={'Country': 'country'})
-            
-            # Handle Scaling (Millions)
-            # Ensure '2024' is numeric
-            temp['2024'] = pd.to_numeric(temp['2024'], errors='coerce')
-            
-            def scale_pop(row):
-                val = row['2024']
-                scale = str(row['Scale']).lower()
-                if pd.isna(val):
-                    return 0
-                if 'million' in scale:
-                    return val * 1_000_000
-                return val
-            
-            temp['population'] = temp.apply(scale_pop, axis=1)
-            temp['year'] = 2024
-            
-            processed_2024 = temp[['country', 'year', 'population']]
-    
-    # 3. Combine
-    if hist_df.empty and isinstance(processed_2024, list):
-         return pd.DataFrame()
-    
-    if isinstance(processed_2024, pd.DataFrame) and not processed_2024.empty:
-        combined = pd.concat([hist_df, processed_2024], ignore_index=True)
-    else:
-        combined = hist_df
-        
-    return combined
-
-
-@st.cache_data
 def get_processed_gapminder_data():
     df_main = get_processed_main_data()
     df_medals = get_processed_medals_data()
@@ -691,20 +840,25 @@ def get_processed_gapminder_data():
     if df_main.empty or df_medals.empty:
         return pd.DataFrame()
 
+    # Calculate delegation size
     delegation = df_main.groupby(['year', 'noc'])['player_id'].nunique().reset_index().rename(
         columns={'player_id': 'delegation_size'})
 
+    # Prepare medals data
     medals_subset = df_medals[['year', 'country_noc', 'total']].rename(columns={
         'country_noc': 'noc',
         'total': 'medals'
     })
 
+    # Merge delegation size with medals
     stats = pd.merge(delegation, medals_subset, on=['year', 'noc'], how='left').fillna({'medals': 0})
 
+    # Get country names
     ref = get_name_map()
     stats['country'] = stats['noc'].map(ref).fillna(stats['noc'])
     stats['country'] = stats['country'].astype(str).str.strip()
 
+    # Merge with Population Data
     if not pop_df.empty:
         pop_df['country'] = pop_df['country'].astype(str).str.strip()
         df = pd.merge(stats, pop_df, on=['country', 'year'], how='left')
@@ -713,24 +867,35 @@ def get_processed_gapminder_data():
         df['population'] = np.nan
         df['iso'] = np.nan
 
+    # Merge with Life Expectancy Data
     if not lex_df.empty:
         lex_df['country'] = lex_df['country'].astype(str).str.strip()
         df = pd.merge(df, lex_df[['country', 'year', 'life_expectancy']], on=['country', 'year'], how='left')
     else:
         df['life_expectancy'] = np.nan
 
-    # Use the new helper function for calculation
+    # Calculate Medals per Million
     df = calculate_medals_per_million(df)
 
-    # If merge failed, this will set to 70.
+    # Fill missing Life Expectancy with default
     df['life_expectancy'] = df['life_expectancy'].fillna(70)
 
+    # --- FIX: Continent Mapping Logic ---
     noc_to_continent = get_continent_mapping()
-    if 'iso' in df.columns:
-        df['continent'] = df['iso'].map(noc_to_continent).fillna('Unknown')
-    else:
-        df['continent'] = 'Unknown'
 
+    # 1. Try mapping using ISO code (from population merge)
+    if 'iso' in df.columns:
+        df['continent'] = df['iso'].map(noc_to_continent)
+    else:
+        df['continent'] = np.nan
+
+    # 2. Fallback: Use NOC code if ISO mapping failed (Critical for rows where population merge failed)
+    df['continent'] = df['continent'].fillna(df['noc'].map(noc_to_continent))
+
+    # 3. Fill remaining unknowns
+    df['continent'] = df['continent'].fillna('Unknown')
+
+    # 4. Manual Overrides for historical/special NOCs
     continent_overrides = {
         'YUG': 'Europe', 'TCH': 'Europe', 'URS': 'Europe', 'EUN': 'Europe',
         'GDR': 'Europe', 'FRG': 'Europe', 'EUA': 'Europe', 'BOH': 'Europe',
@@ -738,14 +903,23 @@ def get_processed_gapminder_data():
         'SCG': 'Europe', 'RU1': 'Europe', 'SRB': 'Europe', 'MNE': 'Europe',
         'KOS': 'Europe'
     }
-    df.loc[df['continent'] == 'Unknown', 'continent'] = df['noc'].map(continent_overrides)
+
+    # Apply overrides where continent is still 'Unknown' or incorrect
+    # (We apply to all to ensure historical entities are correct)
+    # First, separate the rows that need override to avoid warning
+    mask_override = df['noc'].isin(continent_overrides)
+    df.loc[mask_override, 'continent'] = df.loc[mask_override, 'noc'].map(continent_overrides)
+
+    # Final cleanup
     df['continent'] = df['continent'].fillna('Unknown')
 
+    # Filter for valid data
     df = df[df['medals'] > 0].sort_values(['year', 'country'])
 
-    # Required alias for the plotting library
+    # Required alias for plotting
     df['country_name'] = df['country']
 
+    # Normalize columns
     df.columns = df.columns.str.lower()
     df = df.loc[:, ~df.columns.duplicated()]
 

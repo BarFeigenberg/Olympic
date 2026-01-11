@@ -14,14 +14,14 @@ def show_wellness_winning(gap_df):
         col_title, col_controls = st.columns([3, 2], gap="medium")
 
         with col_title:
-            st.title("Wellness & Winning Over Time")
+            st.title("📈 Wellness & Winning Over Time")
 
         with col_controls:
             st.write("")
             st.write("")
             roi_mode = st.radio(
                 "Select View:",
-                ["Medals per Million", "Total Medals"],
+                ["Efficiency (Medals per Million)", "Total Impact (Total Medals)"],
                 horizontal=True,
                 label_visibility="collapsed"
             )
@@ -50,8 +50,7 @@ def show_wellness_winning(gap_df):
             tick_positions_eff = list(range(len(custom_ticks_eff)))
 
             def map_efficiency(val):
-                if val < 0:
-                    return 0
+                if val < 0: return 0
                 return np.interp(val, custom_ticks_eff, tick_positions_eff)
 
             gap_df['y_pos_efficiency'] = gap_df['medals_per_million'].apply(map_efficiency)
@@ -140,14 +139,14 @@ def show_wellness_winning(gap_df):
         fig.layout.updatemenus[0].buttons[0].args[1]["frame"]["duration"] = 700
         fig.layout.updatemenus[0].buttons[0].args[1]["frame"]["redraw"] = True
         fig.layout.updatemenus[0].buttons[0].args[1]["transition"]["duration"] = 300
-        
+
         # Also update sliders to redraw on each step
         if fig.layout.sliders:
             for slider in fig.layout.sliders:
                 for step in slider.steps:
                     # Convert tuple to list to allow modification
                     args_list = list(step.args)
-                    args_list[1] = {"frame": {"duration": 700, "redraw": True}, 
+                    args_list[1] = {"frame": {"duration": 700, "redraw": True},
                                     "mode": "immediate",
                                     "transition": {"duration": 300}}
                     step.args = args_list
