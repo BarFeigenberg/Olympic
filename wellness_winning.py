@@ -19,7 +19,19 @@ def show_wellness_winning(gap_df):
             "Oceania": "#FCB131"  # Yellow
         }
 
-        # --- LAYOUT ADJUSTMENT ---
+        # --- CSS to push radio buttons to the far right ---
+        st.markdown("""
+            <style>
+                /* Push radio buttons to far right, vertically centered */
+                div[data-testid="stHorizontalBlock"]:first-child div[data-testid="column"]:last-child {
+                    display: flex;
+                    justify-content: flex-end;
+                    align-items: center;
+                }
+            </style>
+        """, unsafe_allow_html=True)
+
+        # --- TOP ROW: Page Title + View Mode Toggle ---
         col_title, col_controls = st.columns([3, 2], gap="medium")
 
         with col_title:
@@ -49,13 +61,24 @@ def show_wellness_winning(gap_df):
                 font=dict(size=200, color="rgba(200, 200, 200, 0.2)")  # Large transparent gray
             )
 
-        # Helper string for the subtitle next to the title
-        bubble_legend_text = ("<span style='font-size: 14px; color: #555; font-weight: normal;'>                                                            "
-                              "Bubble size = Delegation size</span>")
+        # --- CHART SUBTITLE ROW: Title left, Bubble note right (same line) ---
+        if roi_mode == "Medals per Million":
+            chart_title_text = "Health vs Efficiency (Medals Per Million)"
+        else:
+            chart_title_text = "Health vs Total Medals"
 
-        if roi_mode == "Efficiency (Medals per Million)":
+        st.markdown(
+            f"""
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin: 0; font-size: 1.5rem;">{chart_title_text}</h3>
+                <span style="font-size: 16px; color: #555;">Bubble size = Delegation size</span>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        if roi_mode == "Medals per Million":
             # --- EFFICIENCY VIEW ---
-            # Updated ticks as requested: removed 3, 6, 10
             custom_ticks_eff = [0, 1, 2, 4, 20]
             tick_positions_eff = list(range(len(custom_ticks_eff)))
 
@@ -75,8 +98,7 @@ def show_wellness_winning(gap_df):
                 hover_data={"y_pos_efficiency": False, "medals_per_million": ':.2f'},
                 size_max=50,
                 range_x=[35, 90],
-                range_y=[-0.5, max_idx_eff + 0.5],
-                title=f"Health vs Talent (Medals Per Million - Non-Linear Scale)"
+                range_y=[-0.5, max_idx_eff + 0.5]
             )
 
             fig.update_layout(
@@ -110,8 +132,7 @@ def show_wellness_winning(gap_df):
                 hover_name="country_name", hover_data=["medals"],
                 size_max=50, range_x=[35, 90],
                 range_y=[-0.5, max_idx + 0.5],
-                log_y=False,
-                title=f"Health vs Total Medals (Non-Linear Scale)"
+                log_y=False
             )
 
             fig.update_layout(

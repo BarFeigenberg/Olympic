@@ -101,6 +101,15 @@ def create_host_radar_chart(medals_only, host_data, h_noc, h_year, view_mode="Al
                 hovertemplate=f"{h_year}: {s['current']}<extra></extra>"
             ))
 
+    # Add legend entry for the gray range bar
+    fig.add_trace(go.Scatter(
+        x=[None], y=[None],
+        mode='lines',
+        line=dict(color='rgba(180, 180, 180, 0.8)', width=8),
+        name='Historical Range',
+        showlegend=True
+    ))
+
     fig.update_layout(
         xaxis=dict(title="Number of Medals", showgrid=True, gridcolor='whitesmoke'),
         yaxis=dict(
@@ -116,18 +125,23 @@ def create_host_radar_chart(medals_only, host_data, h_noc, h_year, view_mode="Al
 
 
 def create_parallel_coordinates_chart(medals_only, host_data, selected_noc, focus_year=None):
+    # --- FIX: Use medals_data (Tally) for accurate counts including Paris 2024 ---
+    from data_processor import get_processed_medals_data
+    medals_data = get_processed_medals_data()
 
-    medals_only = medals_only[medals_only['medal'] != 'No medal'].drop_duplicates(
-        subset=['year', 'noc', 'event', 'medal'])
+    if medals_data.empty:
+        return None
 
-    global_counts = medals_only.groupby('year')['medal'].count().reset_index()
+    # Calculate global totals per year from tally data
+    global_counts = medals_data.groupby('year')['total'].sum().reset_index()
     global_counts.columns = ['year', 'global_total']
 
-    country_data = medals_only[medals_only['noc'] == selected_noc]
+    # Get country-specific data
+    country_data = medals_data[medals_data['country_noc'] == selected_noc]
     if country_data.empty:
         return None
 
-    country_stats = country_data.groupby('year')['medal'].count().reset_index()
+    country_stats = country_data.groupby('year')['total'].sum().reset_index()
     country_stats.columns = ['year', 'country_total']
 
     df = pd.merge(country_stats, global_counts, on='year', how='left')
@@ -136,44 +150,80 @@ def create_parallel_coordinates_chart(medals_only, host_data, selected_noc, focu
     host_years = host_data[host_data['host_noc'] == selected_noc]['year'].unique()
     df['is_host'] = df['year'].apply(lambda x: 1 if x in host_years else 0)
 
-    if focus_year:
-        def get_color_val(row):
-            if row['year'] == focus_year:
-                return 2
-            return row['is_host']
-
-        df['color_val'] = df.apply(get_color_val, axis=1)
-
-        colorscale = [
-            [0, "#0081C8"],  # Guest Year - Blue
-            [0.5, "#00A651"],  # Host Year - Green
-            [1, "#EE334E"]  # Focused Year - Red
-        ]
-    else:
-        df['color_val'] = df['is_host']
-        colorscale = [[0, '#0081C8'], [1, '#00A651']]
-
-    df = df.sort_values(by='color_val', ascending=True)
-
-    # Filter war years first
-    war_years = [1916, 1940, 1944]
+    # Filter war years first AND 1906 (Intercalated)
+    war_years = [1906, 1916, 1940, 1944]
     df = df[~df['year'].isin(war_years)].copy()
 
     # THE TRICK: Convert year to string to force categorical behavior
     df['year_str'] = df['year'].astype(str)
+    
+    # Update the timeline list to match strings (also filter 1906 from here)
+    full_timeline_str = [str(y) for y in range(1896, 2025, 4) if y not in war_years and y != 1906]
 
-    # Update the timeline list to match strings
-    full_timeline_str = [str(y) for y in range(1896, 2025, 4) if y not in war_years]
-
-    # Map years to a numeric sequence (0, 1, 2...) so Plotly treats them as equal steps
+    # Map years to a numeric sequence (0, 1, 2...)
     year_map = {year: i for i, year in enumerate(full_timeline_str)}
     df['year_index'] = df['year_str'].map(year_map)
+
+    # Use GLOBAL range (1896-2024)
+    global_min_year = 1896
+    global_max_year = 2024
+    global_range = global_max_year - global_min_year
+
+    # Define helper to calculate NUMERICAL color value
+    # Split Range Strategy (Normalized to 0-1 range):
+    # 0.00 - 0.45: Standard Years (Red Saturation)
+    # 0.50 - 0.90: Host Years (Green Saturation)
+    # 1.00: Selected Focus Year (Blue)
+    def get_color_val(row):
+        # 0. Check for Focus Year (Absolute Top Priority)
+        if focus_year and row['year'] == focus_year:
+            return 1.0
+            
+        # Normalize year (0.0 to 1.0) based on global range
+        norm = (row['year'] - global_min_year) / global_range
+        norm = max(0.0, min(1.0, norm))
+        
+        if row['is_host']:
+            # Map Host Years to 0.50 - 0.90 range
+            return 0.50 + (norm * 0.40)
+        else:
+            # Map Standard Years to 0.00 - 0.45 range
+            return norm * 0.45
+
+    df['line_color_val'] = df.apply(get_color_val, axis=1)
+
+    # Sort: Standard -> Host -> Focused Year (Last = Top)
+    df = df.sort_values(by='line_color_val', ascending=True)
+
+    # Custom Dual-Gradient Colorscale with BLUE/RED THEME + GREEN HIGHLIGHT
+    # Strategy: "Standard=Blue(Lighter), Host=Red" + Opacity Gradients
+    # MUST be strictly between 0 and 1
+    custom_colorscale = [
+        # --- STANDARD YEARS (0.0 - 0.45): LIGHT BLUE GRADIENT ---
+        # Very Old (0.0): Very Pale Blue / SkyBlue
+        [0.0, 'rgba(135, 206, 250, 0.3)'], 
+        # Very New (0.45): Medium Blue (Medium Opacity)
+        [0.45, 'rgba(0, 0, 180, 0.7)'],
+        
+        # --- HOST YEARS (0.50 - 0.90): RED GRADIENT ---
+        # Very Old (0.50): Light Red (Visible)
+        [0.50, 'rgba(255, 100, 100, 0.85)'],
+        # Very New (0.90): Dark Red (Bold)
+        [0.90, 'rgba(180, 0, 0, 1.0)'],
+        
+        # --- FOCUS YEAR (1.0): GREEN HIGHLIGHT ---
+        # Hard start for Green segment at 0.95
+        [0.95, 'rgba(0, 200, 0, 1.0)'],    # Bright Green (Lime/Green)
+        [1.0, 'rgba(0, 200, 0, 1.0)']      # Bright Green
+    ]
 
     fig = go.Figure(data=
     go.Parcoords(
         line=dict(
-            color=df['color_val'],
-            colorscale=colorscale,
+            color=df['line_color_val'],
+            colorscale=custom_colorscale,
+            cmin=0.0,
+            cmax=1.0, # Strictly 0 to 1
             showscale=False
         ),
         dimensions=[
@@ -280,8 +330,8 @@ def show_host_advantage(host_data, medals_only, country_ref):
 
     # --- 2. RENDER TIMELINE SELECTOR (Plotly Scatter Version) ---
     # 1. Create a complete timeline from 1896 to 2024 (every 4 years)
-    war_years = [1916, 1940, 1944]
-    full_timeline = [y for y in range(1896, 2025, 4) if y not in war_years]
+    war_years = [1906, 1916, 1940, 1944]
+    full_timeline = [y for y in range(1896, 2025, 4) if y not in war_years and y != 1906]
 
     # 2. Render TIMELINE SELECTOR with the full timeline
     if 'last_center_year' not in st.session_state:
@@ -453,28 +503,30 @@ def show_host_advantage(host_data, medals_only, country_ref):
         radar_fig = create_host_radar_chart(medals_only, host_data, h_noc, h_year, view_mode="All")
         if radar_fig:
             st.plotly_chart(radar_fig, width='stretch')
-        else:
-            st.info("No medal data available for this selection.")
 
     st.divider()
     if sel_event:
-        st.subheader("Olympic Journey Timeline")
+        st.subheader(f"Olympic Journey Timeline - {full_country_name}")
 
         col_chart, col_info = st.columns([5, 1], gap="small")
-        country_years = sorted(medals_only[medals_only['noc'] == h_noc]['year'].unique())
+        country_years = sorted([y for y in medals_only[medals_only['noc'] == h_noc]['year'].unique() if y != 1906])
 
         with col_info:
             focus_year = st.selectbox("Year:", ["All"] + list(reversed(country_years)))
             focus_year_val = None if focus_year == "All" else int(focus_year)
 
             if focus_year_val:
-                # Calculate data
-                m_only_filtered = medals_only[medals_only['medal'] != 'No medal'].drop_duplicates(
-                    subset=['year', 'noc', 'event', 'medal'])
-                y_data = m_only_filtered[
-                    (m_only_filtered['noc'] == h_noc) & (m_only_filtered['year'] == focus_year_val)]
-                m_count = len(y_data)
-                g_total = m_only_filtered[m_only_filtered['year'] == focus_year_val].shape[0]
+                # Calculate data using Tally (includes Paris 2024)
+                from data_processor import get_processed_medals_data
+                medals_data = get_processed_medals_data()
+
+                # Country medals for the focused year
+                y_data = medals_data[
+                    (medals_data['country_noc'] == h_noc) & (medals_data['year'] == focus_year_val)]
+                m_count = int(y_data['total'].sum()) if not y_data.empty else 0
+
+                # Global total for the focused year
+                g_total = medals_data[medals_data['year'] == focus_year_val]['total'].sum()
                 share = (m_count / g_total * 100) if g_total > 0 else 0
                 is_host_year = focus_year_val in host_data[host_data['host_noc'] == h_noc]['year'].values
 

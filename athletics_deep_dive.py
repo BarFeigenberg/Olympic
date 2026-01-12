@@ -1,3 +1,4 @@
+
 import base64
 from data_processor import *
 
@@ -21,6 +22,59 @@ def get_local_athlete_image_html(athlete_name):
             # Added max-height and object-fit to ensure the profile column stays aligned
             return f'<img src="data:{mime_type};base64,{encoded_string}"style="width:100%; max-height:380px; object-fit: cover; border-radius: 10px; margin-bottom: 10px;">'
     return None
+
+
+def format_time_value(seconds):
+    """Convert seconds to appropriate time format string."""
+    if seconds >= 3600:
+        hours = int(seconds // 3600)
+        mins = int((seconds % 3600) // 60)
+        secs = seconds % 60
+        return f"{hours}:{mins:02d}:{secs:05.2f}"
+    elif seconds >= 60:
+        mins = int(seconds // 60)
+        secs = seconds % 60
+        return f"{mins}:{secs:05.2f}"
+    else:
+        return f"{seconds:.2f}"
+
+
+def filter_time_outliers(df, result_col='numeric_result'):
+    """
+    Filter out outliers in time-based events using median-based method.
+    This removes garbage data from old records that were entered incorrectly.
+    
+    Uses median as the reference point - keeps only values within 0.5x to 2x the median.
+    This is more robust than IQR when dealing with extreme outliers.
+    """
+    median_val = df[result_col].median()
+    
+    # For time-based events (lower is better), reasonable times are:
+    # - Minimum: at least 50% of median (no one is THAT much faster)
+    # - Maximum: at most 200% of median (outliers are typically 10-20x higher)
+    lower_bound = median_val * 0.5
+    upper_bound = median_val * 2.0
+    
+    # Filter: keep only values within reasonable bounds
+    filtered = df[(df[result_col] >= lower_bound) & (df[result_col] <= upper_bound)].copy()
+    
+    return filtered
+
+
+def get_time_unit_info(data_series):
+    """Determine the best time unit based on MEDIAN value in data (avoids outliers)."""
+    median_seconds = data_series.median()
+    if median_seconds >= 3600:
+        return "Hours", "h", 3600
+    elif median_seconds >= 60:
+        return "Minutes", "min", 60
+    else:
+        return "Seconds", "s", 1
+
+
+def convert_to_display_unit(seconds, divisor):
+    """Convert seconds to display unit (minutes or hours)."""
+    return seconds / divisor
 
 
 def show_athletics_deep_dive(athletics_df, country_ref):
@@ -143,13 +197,23 @@ def show_athletics_deep_dive(athletics_df, country_ref):
             merged_filtered = merged[merged['gender_label'] == selected_gender].copy()
 
             if not merged_filtered.empty:
-                # Unit Setup
+                # Unit Setup - Dynamic time conversion
                 if "ATHLON" in e_name:
                     unit_title, y_suffix, is_high = "Points", " pts", True
+                    time_divisor = 1
                 elif any(x in e_name for x in ['THROW', 'JUMP', 'VAULT', 'PUT']):
                     unit_title, y_suffix, is_high = "Meters", "m", True
+                    time_divisor = 1
                 else:
-                    unit_title, y_suffix, is_high = "Seconds", "s", False
+                    # Time-based events: FILTER OUTLIERS first, then determine best unit
+                    merged_filtered = filter_time_outliers(merged_filtered, 'numeric_result')
+                    if merged_filtered.empty:
+                        st.warning("No valid data after filtering outliers.")
+                        return
+                    unit_title, y_suffix, time_divisor = get_time_unit_info(merged_filtered['numeric_result'])
+                    is_high = False
+                    # Convert values to display unit
+                    merged_filtered['display_result'] = merged_filtered['numeric_result'] / time_divisor
 
                 # Country Mapping & Colors
                 noc_map_local = dict(
@@ -163,12 +227,15 @@ def show_athletics_deep_dive(athletics_df, country_ref):
                                '#7a0177']
                 current_shades = pink_shades if 'Women' in str(selected_gender) else blue_shades
 
+                # Use display_result for time events, numeric_result for others
+                result_col = 'display_result' if time_divisor > 1 else 'numeric_result'
+
                 # Legend sorting logic
                 try:
-                    merged_filtered['tier_interval'] = pd.qcut(merged_filtered['numeric_result'], q=8,
+                    merged_filtered['tier_interval'] = pd.qcut(merged_filtered[result_col], q=8,
                                                                duplicates='drop')
                 except ValueError:
-                    merged_filtered['tier_interval'] = pd.qcut(merged_filtered['numeric_result'], q=4,
+                    merged_filtered['tier_interval'] = pd.qcut(merged_filtered[result_col], q=4,
                                                                duplicates='drop')
 
                 unique_intervals = sorted(merged_filtered['tier_interval'].unique())
@@ -209,32 +276,53 @@ def show_athletics_deep_dive(athletics_df, country_ref):
     st.divider()
     st.subheader(f"Record Progression: {e_name}")
 
-    # Re-calculate units for records
+    # Re-calculate units for records - Dynamic time conversion
     if "ATHLON" in e_name:
         unit_title, y_suffix, is_high = "Points", " pts", True
+        time_divisor = 1
+        vdf_clean = vdf.copy()
     elif any(x in e_name for x in ['THROW', 'JUMP', 'VAULT', 'PUT']):
         unit_title, y_suffix, is_high = "Meters", "m", True
+        time_divisor = 1
+        vdf_clean = vdf.copy()
     else:
-        unit_title, y_suffix, is_high = "Seconds", "s", False
+        # Time-based events: FILTER OUTLIERS first
+        vdf_clean = filter_time_outliers(vdf, 'numeric_result')
+        if vdf_clean.empty:
+            st.warning("No valid data after filtering outliers for Record Progression.")
+            return
+        unit_title, y_suffix, time_divisor = get_time_unit_info(vdf_clean['numeric_result'])
+        is_high = False
 
     if is_high:
-        yearly_best = vdf.groupby(['year', 'gender_label'])['numeric_result'].max().reset_index()
+        yearly_best = vdf_clean.groupby(['year', 'gender_label'])['numeric_result'].max().reset_index()
         yearly_best['running_record'] = yearly_best.groupby('gender_label')['numeric_result'].cummax()
     else:
-        yearly_best = vdf.groupby(['year', 'gender_label'])['numeric_result'].min().reset_index()
+        yearly_best = vdf_clean.groupby(['year', 'gender_label'])['numeric_result'].min().reset_index()
         yearly_best['running_record'] = yearly_best.groupby('gender_label')['numeric_result'].cummin()
+
+    # Convert to display units for time-based events
+    if time_divisor > 1:
+        yearly_best['display_result'] = yearly_best['numeric_result'] / time_divisor
+        y_col = 'display_result'
+    else:
+        y_col = 'numeric_result'
 
     yearly_best = yearly_best.sort_values('year')
     record_breaks = yearly_best[yearly_best['numeric_result'] == yearly_best['running_record']].copy()
     record_breaks = record_breaks.drop_duplicates(subset=['gender_label', 'numeric_result'], keep='first')
-    record_breaks = record_breaks.merge(vdf[['year', 'gender_label', 'numeric_result', 'name', 'country']],
+    record_breaks = record_breaks.merge(vdf_clean[['year', 'gender_label', 'numeric_result', 'name', 'country']],
                                         on=['year', 'gender_label', 'numeric_result'], how='left')
+
+    # Add display_result to record_breaks too
+    if time_divisor > 1:
+        record_breaks['display_result'] = record_breaks['numeric_result'] / time_divisor
 
     current_record_holder = record_breaks.sort_values('year').groupby('gender_label').tail(1)
     historical_record_breaks = record_breaks.drop(current_record_holder.index)
 
     men_color, women_color = '#1E90FF', 'violet'
-    fig_trend = px.line(yearly_best, x='year', y='numeric_result', color='gender_label',
+    fig_trend = px.line(yearly_best, x='year', y=y_col, color='gender_label',
                         color_discrete_map={'Men': men_color, 'Women': women_color})
 
     # Define Darker Shades for the Current Record Markers
@@ -246,6 +334,9 @@ def show_athletics_deep_dive(athletics_df, country_ref):
 
         c_data = df[['name', 'country']].fillna('N/A').values
 
+        # Use display_result for time-based events
+        trace_y_col = 'display_result' if time_divisor > 1 else 'numeric_result'
+
         # Logic for Current Record color: Darker version of the gender color
         if is_current:
             marker_color = dark_men if group_name == 'Men' else dark_women
@@ -256,7 +347,7 @@ def show_athletics_deep_dive(athletics_df, country_ref):
 
         fig_trend.add_scatter(
             x=df['year'],
-            y=df['numeric_result'],
+            y=df[trace_y_col],
             mode='markers',
             marker=dict(
                 size=marker_size,
@@ -267,7 +358,7 @@ def show_athletics_deep_dive(athletics_df, country_ref):
             hovertemplate=(
                     "<b>%{customdata[0]}</b> (%{customdata[1]})<br>" +
                     "Year: %{x}<br>" +
-                    f"Result: %{{y}}{y_suffix}<br>" +
+                    f"Result: %{{y:.2f}}{y_suffix}<br>" +
                     "<extra></extra>"
             ),
             name=f"Current Record ({group_name})" if is_current else group_name,
@@ -284,7 +375,7 @@ def show_athletics_deep_dive(athletics_df, country_ref):
                      'Women')
 
     # 1. Use unique years present in data to avoid gaps (1940-1944 etc.)
-    tick_vals = sorted(vdf['year'].unique())
+    tick_vals = sorted(vdf_clean['year'].unique())
 
     # 2. Create labels with "OR" for record years
     tick_text = []
@@ -304,25 +395,32 @@ def show_athletics_deep_dive(athletics_df, country_ref):
         else:
             tick_text.append(str(y))
 
-    # Calculate the yearly best results
+    # Calculate the yearly best results with names for hover
     if is_high:
-        yearly_best = vdf.groupby(['year', 'gender_label'])['numeric_result'].max().reset_index()
+        yearly_best_hover = vdf_clean.groupby(['year', 'gender_label'])['numeric_result'].max().reset_index()
     else:
-        yearly_best = vdf.groupby(['year', 'gender_label'])['numeric_result'].min().reset_index()
+        yearly_best_hover = vdf_clean.groupby(['year', 'gender_label'])['numeric_result'].min().reset_index()
 
-    yearly_best = yearly_best.merge(
-        vdf[['year', 'gender_label', 'numeric_result', 'name', 'country']],
+    yearly_best_hover = yearly_best_hover.merge(
+        vdf_clean[['year', 'gender_label', 'numeric_result', 'name', 'country']],
         on=['year', 'gender_label', 'numeric_result'],
         how='left').drop_duplicates(subset=['year', 'gender_label'])  # Ensure one row per year/gender
 
+    # Add display_result for time-based events
+    if time_divisor > 1:
+        yearly_best_hover['display_result'] = yearly_best_hover['numeric_result'] / time_divisor
+        hover_y_col = 'display_result'
+    else:
+        hover_y_col = 'numeric_result'
+
     # Create the base figure
-    fig_trend = px.line(yearly_best, x='year', y='numeric_result', color='gender_label',
+    fig_trend = px.line(yearly_best_hover, x='year', y=hover_y_col, color='gender_label',
                         color_discrete_map={'Men': men_color, 'Women': women_color})
 
     # Update each gender trace separately to ensure correct hover alignment
-    for gender in yearly_best['gender_label'].unique():
+    for gender in yearly_best_hover['gender_label'].unique():
         # Filter data for this specific gender and sort by year
-        gender_data = yearly_best[yearly_best['gender_label'] == gender].sort_values('year')
+        gender_data = yearly_best_hover[yearly_best_hover['gender_label'] == gender].sort_values('year')
 
         # Prepare the specific hover package for this gender
         # Now 'name' and 'country' are safely in the index
@@ -334,13 +432,13 @@ def show_athletics_deep_dive(athletics_df, country_ref):
             hovertemplate=(
                     "<b>%{customdata[1]}</b> (%{customdata[2]})<br>" +
                     "Year: %{customdata[0]}<br>" +
-                    "Result: %{y}" + y_suffix +
+                    "Result: %{y:.2f}" + y_suffix +
                     "<extra></extra>"
             ),
             selector={"name": gender}  # Targets ONLY the specific gender line
         )
 
-    for gender in yearly_best['gender_label'].unique():
+    for gender in yearly_best_hover['gender_label'].unique():
         # Get the single latest record for this gender
         current_rec = current_record_holder[current_record_holder['gender_label'] == gender]
 
@@ -348,9 +446,12 @@ def show_athletics_deep_dive(athletics_df, country_ref):
             # Define the color based on gender
             marker_color = dark_men if gender == 'Men' else dark_women
 
+            # Use display_result if time-based
+            rec_y_val = current_rec['display_result'] if time_divisor > 1 else current_rec['numeric_result']
+
             fig_trend.add_scatter(
                 x=current_rec['year'],
-                y=current_rec['numeric_result'],
+                y=rec_y_val,
                 mode='markers',
                 marker=dict(
                     size=12,
@@ -361,23 +462,34 @@ def show_athletics_deep_dive(athletics_df, country_ref):
                 hovertemplate=(
                         "<b>CURRENT RECORD: %{customdata[1]}</b> (%{customdata[2]})<br>" +
                         "Year: %{customdata[0]}<br>" +
-                        "Result: %{y}" + y_suffix +
+                        "Result: %{y:.2f}" + y_suffix +
                         "<extra></extra>"
                 ),
                 name=f"Current Record ({gender})",
                 showlegend=False
             )
 
-    # 3. Final layout with category axis
+    logical_order = [str(y) for y in sorted(vdf_clean['year'].unique())]
     fig_trend.update_layout(
+        height=600,
+        plot_bgcolor='white',
         xaxis=dict(
+            title="Year",
             type='category',
+            # FIX: Explicitly tell Plotly the correct order of years
+            categoryorder='array',
+            categoryarray=logical_order,
             tickmode='array',
             tickvals=tick_vals,
             ticktext=tick_text,
             tickangle=-270,
             showgrid=False
+        ),
+        yaxis=dict(
+            title=f"Result ({unit_title})",
+            ticksuffix=y_suffix,
+            showgrid=True,
+            gridcolor='whitesmoke'
         )
     )
-
     st.plotly_chart(fig_trend, width='stretch')
