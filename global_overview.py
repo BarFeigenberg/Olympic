@@ -50,10 +50,10 @@ def show_global_overview(medals_only, total_medals_per_country, country_list, me
                                                   how='left')
         country_df = country_df_update[country_df_update['country'] == st.session_state.selected_country]
 
-        country_stats = map_df[map_df['country'] == st.session_state.selected_country]
+        country_total_row = total_medals_per_country[total_medals_per_country['country'] == st.session_state.selected_country]
 
-        if not country_stats.empty:
-            total = int(country_stats['total'].values[0])
+        if not country_total_row.empty:
+            total = int(country_total_row.iloc[0]['total'])
         else:
             total = 0
 
@@ -195,8 +195,13 @@ def show_global_overview(medals_only, total_medals_per_country, country_list, me
     with t_col2:
         trend_mode = st.radio("Metric:", ["Total", "Per Million"], horizontal=True, label_visibility="collapsed")
 
-    # 1. Filter raw data
     raw_td = medals_data[medals_data['country'] == st.session_state.selected_country].copy()
+
+    # Check if empty, and try to fallback to medals_only if needed
+    if raw_td.empty:
+        raw_td = medals_only[medals_only['country'] == st.session_state.selected_country].copy()
+        if not raw_td.empty:
+            raw_td = raw_td.groupby('year').size().reset_index(name='total')
 
     if not raw_td.empty:
         # 2. Aggregation Fix: Ensure strictly 1 row per year before merging population
@@ -230,7 +235,16 @@ def show_global_overview(medals_only, total_medals_per_country, country_list, me
             fig = px.line(td, x='year', y=y_val, markers=False,
                           color_discrete_sequence=color_seq,
                           hover_data={'medals': True, 'population': True, 'medals_per_million': ':.2f'})
-            fig.update_layout(height=400, yaxis_title=y_title)
+            fig.update_layout(
+                height=400,
+                yaxis_title=y_title,
+                xaxis=dict(
+                    tickmode='array',
+                    tickvals=td['year'].unique(),
+                    tickangle=0,
+                    type='category'
+                )
+            )
             st.plotly_chart(fig, width='stretch')
         else:
             st.error(f"Missing data for {y_val}")

@@ -30,7 +30,7 @@ def show_wellness_winning(gap_df):
             st.write("")
             roi_mode = st.radio(
                 "Select View:",
-                ["Medals per Million)", "Total Medals"],
+                ["Medals per Million", "Total Medals"],
                 horizontal=True,
                 label_visibility="collapsed"
             )
@@ -76,7 +76,7 @@ def show_wellness_winning(gap_df):
                 size_max=50,
                 range_x=[35, 90],
                 range_y=[-0.5, max_idx_eff + 0.5],
-                title=f"Health vs Talent (Medals Per Million - Non-Linear Scale){bubble_legend_text}"
+                title=f"Health vs Talent (Medals Per Million - Non-Linear Scale)"
             )
 
             fig.update_layout(
@@ -111,7 +111,7 @@ def show_wellness_winning(gap_df):
                 size_max=50, range_x=[35, 90],
                 range_y=[-0.5, max_idx + 0.5],
                 log_y=False,
-                title=f"Health vs Total Medals (Non-Linear Scale){bubble_legend_text}"
+                title=f"Health vs Total Medals (Non-Linear Scale)"
             )
 
             fig.update_layout(
@@ -137,7 +137,7 @@ def show_wellness_winning(gap_df):
         bubble_legend = dict(
             x=1, y=-0.12,  # Positioned at the bottom right, below the axis
             xref="paper", yref="paper",
-            text="⚪ <b>Bubble size</b> = Delegation size",
+            text="<b>Bubble size</b> = Delegation size",
             showarrow=False,
             font=dict(size=12, color="#555"),
             xanchor="right"

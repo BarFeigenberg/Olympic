@@ -326,6 +326,7 @@ def show_host_advantage(host_data, medals_only, country_ref):
     # 4. Generate Enhanced Timeline Chart
     fig_global = go.Figure()
 
+    filtered_global_data['host_country_name'] = filtered_global_data['host_noc'].map(noc_map).fillna(filtered_global_data['host_noc'])
     # Enhanced Bar chart with dynamic colors and borders
     fig_global.add_trace(go.Bar(
         x=filtered_global_data['year'],
@@ -334,7 +335,7 @@ def show_host_advantage(host_data, medals_only, country_ref):
             color=filtered_global_data['color'],
             line=dict(color='white', width=1.5)  # Clean white border
         ),
-        text=filtered_global_data['host_noc'],
+        text=filtered_global_data['host_country_name'],
         textposition="outside",
         hovertemplate="<b>%{text} (%{x})</b><br>Performance Boost: %{y:.1f}%<extra></extra>"
     ))

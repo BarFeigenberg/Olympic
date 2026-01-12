@@ -200,7 +200,7 @@ def show_athletics_deep_dive(athletics_df, country_ref):
                                        margin=dict(t=10))  # Small top margin since title is outside
                 fig_phys.update_traces(marker=dict(size=20, opacity=0.8))
 
-                st.plotly_chart(fig_phys, use_container_width=True)
+                st.plotly_chart(fig_phys, width='stretch')
                 st.caption(f"**Color Legend:** Darker shades = Better Results.")
         else:
             st.info("Not enough physical data available.")
@@ -325,4 +325,4 @@ def show_athletics_deep_dive(athletics_df, country_ref):
         )
     )
 
-    st.plotly_chart(fig_trend, use_container_width=True)
+    st.plotly_chart(fig_trend, width='stretch')
