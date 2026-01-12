@@ -285,16 +285,15 @@ def show_host_advantage(host_data, medals_only, country_ref):
 
     # 2. Render TIMELINE SELECTOR with the full timeline
     if 'last_center_year' not in st.session_state:
-        st.session_state.last_center_year = h_year if h_year in full_timeline else 2024
+        st.session_state.last_center_year = 2024
 
     # Use full_timeline instead of all_years
-    timeline_fig = create_timeline_selector(full_timeline, st.session_state.last_center_year)
+    timeline_fig = create_timeline_selector(full_timeline, int(st.session_state.last_center_year))
 
-    selected_point = st.plotly_chart(timeline_fig, width='stretch', on_select="rerun", key="timeline_selector")
+    selected_point = st.plotly_chart(timeline_fig, width='stretch', on_select="rerun", key="timeline_chart")
 
-    if selected_point and "selection" in selected_point and selected_point["selection"]["points"]:
-        new_year = selected_point["selection"]["points"][0]["x"]
-
+    if selected_point and selected_point.get("selection") and selected_point["selection"]["points"]:
+        new_year = int(selected_point["selection"]["points"][0]["x"])
         if new_year != st.session_state.last_center_year:
             st.session_state.last_center_year = new_year
             st.rerun()
@@ -426,15 +425,15 @@ def show_host_advantage(host_data, medals_only, country_ref):
 
         with m1:
             st.markdown(
-                f'<div style="{card_style}"><div style="{label_style}">Host Year Medals 🏅</div><div style="{value_style}">{h_medals}</div></div>',
+                f'<div style="{card_style}"><div style="{label_style}">Host Year Medals </div><div style="{value_style}">{h_medals}</div></div>',
                 unsafe_allow_html=True)
         with m2:
             st.markdown(
-                f'<div style="{card_style}"><div style="{label_style}">Pre-Host Avg (12y) 📊</div><div style="{value_style}">{avg_pre:.1f}</div></div>',
+                f'<div style="{card_style}"><div style="{label_style}">Pre-Host Avg (12y) </div><div style="{value_style}">{avg_pre:.1f}</div></div>',
                 unsafe_allow_html=True)
         with m3:
             st.markdown(
-                f'<div style="{card_style}"><div style="{label_style}">Net Gain 📈</div><div style="{value_style}">{" + " if diff > 0 else ""}{int(diff)}</div></div>',
+                f'<div style="{card_style}"><div style="{label_style}">Net Gain </div><div style="{value_style}">{" + " if diff > 0 else ""}{int(diff)}</div></div>',
                 unsafe_allow_html=True)
         with m4:
             st.markdown(f"""

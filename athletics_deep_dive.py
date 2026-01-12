@@ -296,32 +296,87 @@ def show_athletics_deep_dive(athletics_df, country_ref):
 
         if is_men_rec and is_women_rec:
             tick_text.append(
-                f"<b>{y}</b><br><span style='color:{dark_men}'>OR</span> <span style='color:{dark_women}'>OR</span>")
+                f"<b>{y}</b><br><span style='color:{dark_men}'>Olympic Record</span> <span style='color:{dark_women}'>OR</span>")
         elif is_men_rec:
-            tick_text.append(f"<b>{y}</b><br><span style='color:{dark_men}'>OR</span>")
+            tick_text.append(f"<b>{y}</b><br><span style='color:{dark_men}'>Olympic Record</span>")
         elif is_women_rec:
-            tick_text.append(f"<b>{y}</b><br><span style='color:{dark_women}'>OR</span>")
+            tick_text.append(f"<b>{y}</b><br><span style='color:{dark_women}'>Olympic Record</span>")
         else:
             tick_text.append(str(y))
 
-    # 3. Apply the updated layout with categorical axis and no vertical grids
+    # Calculate the yearly best results
+    if is_high:
+        yearly_best = vdf.groupby(['year', 'gender_label'])['numeric_result'].max().reset_index()
+    else:
+        yearly_best = vdf.groupby(['year', 'gender_label'])['numeric_result'].min().reset_index()
+
+    yearly_best = yearly_best.merge(
+        vdf[['year', 'gender_label', 'numeric_result', 'name', 'country']],
+        on=['year', 'gender_label', 'numeric_result'],
+        how='left').drop_duplicates(subset=['year', 'gender_label'])  # Ensure one row per year/gender
+
+    # Create the base figure
+    fig_trend = px.line(yearly_best, x='year', y='numeric_result', color='gender_label',
+                        color_discrete_map={'Men': men_color, 'Women': women_color})
+
+    # Update each gender trace separately to ensure correct hover alignment
+    for gender in yearly_best['gender_label'].unique():
+        # Filter data for this specific gender and sort by year
+        gender_data = yearly_best[yearly_best['gender_label'] == gender].sort_values('year')
+
+        # Prepare the specific hover package for this gender
+        # Now 'name' and 'country' are safely in the index
+        specific_hover = gender_data[['year', 'name', 'country']].fillna('N/A')
+
+        # Apply to the matching trace
+        fig_trend.update_traces(
+            customdata=specific_hover,
+            hovertemplate=(
+                    "<b>%{customdata[1]}</b> (%{customdata[2]})<br>" +
+                    "Year: %{customdata[0]}<br>" +
+                    "Result: %{y}" + y_suffix +
+                    "<extra></extra>"
+            ),
+            selector={"name": gender}  # Targets ONLY the specific gender line
+        )
+
+    for gender in yearly_best['gender_label'].unique():
+        # Get the single latest record for this gender
+        current_rec = current_record_holder[current_record_holder['gender_label'] == gender]
+
+        if not current_rec.empty:
+            # Define the color based on gender
+            marker_color = dark_men if gender == 'Men' else dark_women
+
+            fig_trend.add_scatter(
+                x=current_rec['year'],
+                y=current_rec['numeric_result'],
+                mode='markers',
+                marker=dict(
+                    size=12,
+                    color=marker_color,
+                ),
+                # Important: Match the hover data for the record point too
+                customdata=current_rec[['year', 'name', 'country']].fillna('N/A'),
+                hovertemplate=(
+                        "<b>CURRENT RECORD: %{customdata[1]}</b> (%{customdata[2]})<br>" +
+                        "Year: %{customdata[0]}<br>" +
+                        "Result: %{y}" + y_suffix +
+                        "<extra></extra>"
+                ),
+                name=f"Current Record ({gender})",
+                showlegend=False
+            )
+
+    # 3. Final layout with category axis
     fig_trend.update_layout(
-        height=600,
-        plot_bgcolor='white',
         xaxis=dict(
-            title="Year",
             type='category',
             tickmode='array',
             tickvals=tick_vals,
             ticktext=tick_text,
             tickangle=-270,
             showgrid=False
-        ),
-        yaxis=dict(
-            title=f"Result ({unit_title})",
-            ticksuffix=y_suffix,
-            showgrid=True,
-            gridcolor='whitesmoke'
         )
     )
 
