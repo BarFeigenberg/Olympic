@@ -290,7 +290,7 @@ def show_host_advantage(host_data, medals_only, country_ref):
     # Use full_timeline instead of all_years
     timeline_fig = create_timeline_selector(full_timeline, st.session_state.last_center_year)
 
-    selected_point = st.plotly_chart(timeline_fig, use_container_width=True, on_select="rerun", key="timeline_selector")
+    selected_point = st.plotly_chart(timeline_fig, width='stretch', on_select="rerun", key="timeline_selector")
 
     if selected_point and "selection" in selected_point and selected_point["selection"]["points"]:
         new_year = selected_point["selection"]["points"][0]["x"]
@@ -452,7 +452,7 @@ def show_host_advantage(host_data, medals_only, country_ref):
         # Note: view_mode is set to "All" and the radio buttons were removed
         radar_fig = create_host_radar_chart(medals_only, host_data, h_noc, h_year, view_mode="All")
         if radar_fig:
-            st.plotly_chart(radar_fig, use_container_width=True)
+            st.plotly_chart(radar_fig, width='stretch')
         else:
             st.info("No medal data available for this selection.")
 
