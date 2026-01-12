@@ -123,36 +123,83 @@ def show_global_overview(medals_only, total_medals_per_country, country_list, me
     st.divider()
 
     # --- ROW 2: WORLD MAP ---
-    bins = [0, 0.2, 0.5, 1, 3, 7, 15, 30, 2000]
-    bin_labels = ["0 – 0.2", "0.2 – 0.5", "0.5 – 1", "1 – 3", "3 – 7", "7 – 15", "15 – 30", "30 – 60"]
+    # --- ROW 2: WORLD MAP ---
+    c_map_title, c_map_ctrl = st.columns([1, 1]) # Equal width to ensure visibility
+    with c_map_title:
+        st.subheader("Olympics World Map")
+    with c_map_ctrl:
+        # Use a distinctive key to avoid conflicts
+        map_metric = st.radio("Choose Metric:", ["Medals per Million", "Total Medals"], horizontal=True, key="map_metric_toggle")
 
-    if 'medals_per_million' in map_df.columns:
-        map_df['bin_label'] = pd.cut(
-            map_df['medals_per_million'],
+    # Metrics Logic
+    if map_metric == "Medals per Million":
+        # --- LOGIC A: Per Million (Binned) ---
+        bins = [0, 0.2, 0.5, 1, 3, 7, 15, 30, 2000]
+        bin_labels = ["0 – 0.2", "0.2 – 0.5", "0.5 – 1", "1 – 3", "3 – 7", "7 – 15", "15 – 30", "30 – 60"]
+
+        if 'medals_per_million' in map_df.columns:
+            map_df['bin_label'] = pd.cut(
+                map_df['medals_per_million'],
+                bins=bins,
+                labels=bin_labels,
+                include_lowest=True,
+                right=False
+            ).astype(str)
+            map_viz_df = map_df[map_df['bin_label'] != 'nan'].copy()
+        else:
+            map_viz_df = map_df.copy()
+            map_viz_df['bin_label'] = "0 – 0.2"
+
+        discrete_reds = px.colors.sequential.Reds[1:10]
+        
+        fig_map = px.choropleth(
+            map_viz_df,
+            locations="country",
+            locationmode="country names",
+            color="bin_label",  # Binned Color
+            hover_name="country",
+            hover_data={"bin_label": False, "country": False, "total": True, "population": True,
+                        "medals_per_million": ":.2f"},
+            color_discrete_sequence=discrete_reds,
+            category_orders={"bin_label": bin_labels},
+            projection="natural earth"
+        )
+        legend_title = "Medals per 1M"
+
+    else:
+        # --- LOGIC B: Total Medals (Binned) ---
+        # User requested bins similar to "Per Million"
+        # Bins: 0, 10, 50, 100, 300, 700, 1500, 3000, 10000
+        bins = [0, 10, 50, 100, 300, 700, 1500, 3000, 10000]
+        bin_labels = ["0 – 10", "10 – 50", "50 – 100", "100 – 300", "300 – 700", "700 – 1500", "1500 – 3000", "3000+"]
+
+        map_viz_df = map_df.copy()
+        
+        map_viz_df['bin_label'] = pd.cut(
+            map_viz_df['total'],
             bins=bins,
             labels=bin_labels,
             include_lowest=True,
             right=False
         ).astype(str)
-        map_viz_df = map_df[map_df['bin_label'] != 'nan'].copy()
-    else:
-        map_viz_df = map_df.copy()
-        map_viz_df['bin_label'] = "0 – 0.2"
+        
+        # Filter out NaN bins if any
+        map_viz_df = map_viz_df[map_viz_df['bin_label'] != 'nan']
 
-    discrete_reds = px.colors.sequential.Reds[1:10]
-
-    fig_map = px.choropleth(
-        map_viz_df,
-        locations="country",
-        locationmode="country names",
-        color="bin_label",
-        hover_name="country",
-        hover_data={"bin_label": False, "country": False, "total": True, "population": True,
-                    "medals_per_million": ":.2f"},
-        color_discrete_sequence=discrete_reds,
-        category_orders={"bin_label": bin_labels},
-        projection="natural earth"
-    )
+        discrete_reds = px.colors.sequential.Reds[1:9] # Adjust length to match bins
+        
+        fig_map = px.choropleth(
+            map_viz_df,
+            locations="country",
+            locationmode="country names",
+            color="bin_label", # Binned Color
+            hover_name="country",
+            hover_data={"bin_label": False, "country": False, "total": True, "population": True, "medals_per_million": ":.2f"},
+            color_discrete_sequence=discrete_reds,
+            category_orders={"bin_label": bin_labels},
+            projection="natural earth"
+        )
+        legend_title = "Total Medals"
 
     # Highlight selected country with BLACK border
     sel_data = map_viz_df[map_viz_df['country'] == st.session_state.selected_country]
@@ -175,7 +222,7 @@ def show_global_overview(medals_only, total_medals_per_country, country_list, me
         showcountries=True, countrycolor="#AAAAAA", countrywidth=0.5
     )
     fig_map.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, height=500, clickmode="event", dragmode="pan",
-                          legend_title_text="Medals per 1M")
+                          legend_title_text=legend_title)
 
     map_sel = st.plotly_chart(fig_map, width='stretch', on_select="rerun", key="world_map")
     if map_sel and map_sel["selection"]["points"]:
