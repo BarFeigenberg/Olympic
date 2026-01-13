@@ -175,11 +175,10 @@ def show_wellness_winning(gap_df):
             for frame in fig.frames:
                 frame_year = frame.name
 
-                # Keep BOTH annotations: the changing year and the static legend
+                # Keep only the changing year annotation (User requested to remove bottom legend)
                 frame.layout = go.Layout(
                     annotations=[
-                        get_year_annotation(frame_year),
-                        bubble_legend
+                        get_year_annotation(frame_year)
                     ]
                 )
 

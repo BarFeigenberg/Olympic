@@ -423,7 +423,24 @@ def show_host_advantage(host_data, medals_only, country_ref):
     col_sel, col_spacer = st.columns([1, 5])
 
     with col_sel:
-        sel_event = st.selectbox("Select Host Event:", options)
+        # Default to Sydney 2000 if available
+        default_index = 0
+        sydney_option = None
+        
+        for i, opt in enumerate(options):
+            if "2000" in opt and "Sydney" in opt:
+                default_index = i
+                sydney_option = opt
+                break
+        
+        # Initialize session state if not present
+        if "host_event_selector" not in st.session_state:
+             if sydney_option:
+                 st.session_state.host_event_selector = sydney_option
+             else:
+                 st.session_state.host_event_selector = options[0] if options else None
+        
+        sel_event = st.selectbox("Select Host Event:", options, key="host_event_selector")
 
     # Extract Selection Variables EARLY
     h_year = None
