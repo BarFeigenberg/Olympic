@@ -1,8 +1,9 @@
 import plotly.graph_objects as go
 from data_processor import *
+import pandas as pd
 
 
-def create_host_radar_chart(medals_only, host_data, h_noc, h_year, view_mode="All", weight_col=None):
+def create_host_dumbbell_chart(medals_only, host_data, h_noc, h_year, view_mode="All", weight_col=None):
     if medals_only.empty:
         return None
 
@@ -40,9 +41,9 @@ def create_host_radar_chart(medals_only, host_data, h_noc, h_year, view_mode="Al
     fig = go.Figure()
 
     # Colors Palette
-    c_red = "#EE334E"
-    c_blue = "#0081C8"
-    c_green = "#00A651"
+    c_red = "#720026"
+    c_blue = "#00a6fb"
+    c_green = "#ffa62b"
     c_range = "rgba(220, 220, 220, 0.6)"
     c_ticks = "rgba(150, 150, 150, 0.8)"
 
@@ -57,7 +58,7 @@ def create_host_radar_chart(medals_only, host_data, h_noc, h_year, view_mode="Al
                 hoverinfo='skip', showlegend=False
             ))
 
-            # 2. Range End Ticks (The "Dumbbell" brackets)
+            # 2. Range End Ticks (The "dumbbell" brackets)
             fig.add_trace(go.Scatter(
                 x=[s['min'], s['max']], y=[i, i],
                 mode='markers',
@@ -126,14 +127,13 @@ def create_host_radar_chart(medals_only, host_data, h_noc, h_year, view_mode="Al
 
 def create_parallel_coordinates_chart(medals_only, host_data, selected_noc, focus_year=None):
     # --- FIX: Use medals_data (Tally) for accurate counts including Paris 2024 ---
-    # --- FIX: Use medals_data (Tally) for accurate counts including Paris 2024 ---
     from data_processor import get_processed_total_medals_data
     medals_data = get_processed_total_medals_data()
 
     if medals_data.empty:
         return None
 
-    # Calculate global totals per year from tally data
+    # Calculate global totals per year
     global_counts = medals_data.groupby('year')['total'].sum().reset_index()
     global_counts.columns = ['year', 'global_total']
 
@@ -151,80 +151,60 @@ def create_parallel_coordinates_chart(medals_only, host_data, selected_noc, focu
     host_years = host_data[host_data['host_noc'] == selected_noc]['year'].unique()
     df['is_host'] = df['year'].apply(lambda x: 1 if x in host_years else 0)
 
-    # Filter war years first AND 1906 (Intercalated)
+    # Filter war years and 1906
     war_years = [1906, 1916, 1940, 1944]
     df = df[~df['year'].isin(war_years)].copy()
 
-    # THE TRICK: Convert year to string to force categorical behavior
     df['year_str'] = df['year'].astype(str)
-    
-    # Update the timeline list to match strings (also filter 1906 from here)
     full_timeline_str = [str(y) for y in range(1896, 2025, 4) if y not in war_years and y != 1906]
-
-    # Map years to a numeric sequence (0, 1, 2...)
     year_map = {year: i for i, year in enumerate(full_timeline_str)}
     df['year_index'] = df['year_str'].map(year_map)
 
-    # Use GLOBAL range (1896-2024)
     global_min_year = 1896
     global_max_year = 2024
     global_range = global_max_year - global_min_year
 
-    # Define helper to calculate NUMERICAL color value
-    # Split Range Strategy (Normalized to 0-1 range):
-    # 0.00 - 0.45: Standard Years (Red Saturation)
-    # 0.50 - 0.90: Host Years (Green Saturation)
-    # 1.00: Selected Focus Year (Blue)
     def get_color_val(row):
-        # 0. Check for Focus Year (Absolute Top Priority)
         if focus_year and row['year'] == focus_year:
             return 1.0
-            
-        # Normalize year (0.0 to 1.0) based on global range
         norm = (row['year'] - global_min_year) / global_range
         norm = max(0.0, min(1.0, norm))
-        
         if row['is_host']:
-            # Map Host Years to 0.50 - 0.90 range
-            return 0.50 + (norm * 0.40)
+            return 0.50 + (norm * 0.40)  # Orange range
         else:
-            # Map Standard Years to 0.00 - 0.45 range
-            return norm * 0.45
+            return norm * 0.45  # Purple range
 
     df['line_color_val'] = df.apply(get_color_val, axis=1)
 
-    # Sort: Standard -> Host -> Focused Year (Last = Top)
+    # --- DUPLICATE FOCUS YEAR TO DRAW ON TOP ---
+    if focus_year:
+        focus_df = df[df['year'] == focus_year].copy()
+        if not focus_df.empty:
+            df = pd.concat([df, focus_df])
+
     df = df.sort_values(by='line_color_val', ascending=True)
 
-    # Custom Dual-Gradient Colorscale with BLUE/RED THEME + GREEN HIGHLIGHT
-    # Strategy: "Standard=Blue(Lighter), Host=Red" + Opacity Gradients
-    # MUST be strictly between 0 and 1
+    # --- CUSTOM COLOR SCALE ---
     custom_colorscale = [
-        # --- STANDARD YEARS (0.0 - 0.45): LIGHT BLUE GRADIENT ---
-        # Very Old (0.0): Very Pale Blue / SkyBlue
-        [0.0, 'rgba(135, 206, 250, 0.3)'], 
-        # Very New (0.45): Medium Blue (Medium Opacity)
-        [0.45, 'rgba(0, 0, 180, 0.7)'],
-        
-        # --- HOST YEARS (0.50 - 0.90): RED GRADIENT ---
-        # Very Old (0.50): Light Red (Visible)
-        [0.50, 'rgba(255, 100, 100, 0.85)'],
-        # Very New (0.90): Dark Red (Bold)
-        [0.90, 'rgba(180, 0, 0, 1.0)'],
-        
-        # --- FOCUS YEAR (1.0): GREEN HIGHLIGHT ---
-        # Hard start for Green segment at 0.95
-        [0.95, 'rgba(0, 200, 0, 1.0)'],    # Bright Green (Lime/Green)
-        [1.0, 'rgba(0, 200, 0, 1.0)']      # Bright Green
+        # Standard Years (Purple)
+        [0.0, 'rgba(160,80,160,0.3)'],  # pale warm purple
+        [0.45, 'rgba(160,80,160,0.7)'],  # medium warm purple
+
+        # Host Years (Orange)
+        [0.50, 'rgba(230,159,0,0.85)'],  # light orange
+        [0.90, 'rgba(230,159,0,1.0)'],   # strong orange
+
+        # Focus Year (Turquoise / Cyan)
+        [0.95, 'rgba(0,255,255,1.0)'],
+        [1.0, 'rgba(0,255,255,1.0)']
     ]
 
-    fig = go.Figure(data=
-    go.Parcoords(
+    fig = go.Figure(data=go.Parcoords(
         line=dict(
             color=df['line_color_val'],
             colorscale=custom_colorscale,
             cmin=0.0,
-            cmax=1.0, # Strictly 0 to 1
+            cmax=1.0,
             showscale=False
         ),
         dimensions=[
@@ -232,17 +212,16 @@ def create_parallel_coordinates_chart(medals_only, host_data, selected_noc, focu
                  values=df['year_index'],
                  tickvals=list(year_map.values()),
                  ticktext=list(year_map.keys())),
-            dict(range=[-1, 1.5],
-                 tickvals=[-1, 0, 1, 1.5],
-                 ticktext=['', 'No', 'Yes', ''],
+            dict(range=[-1,1.5],
+                 tickvals=[-1,0,1,1.5],
+                 ticktext=['','No','Yes',''],
                  label='Is Host?', values=df['is_host']),
             dict(label='Medals', values=df['country_total']),
             dict(label='Medals Share (%)', values=df['percentage'], tickformat='.1f')
         ],
         labelfont=dict(size=14, color='black', family="Arial Black"),
         tickfont=dict(size=10, color='black')
-    )
-    )
+    ))
 
     fig.update_layout(
         height=800,
@@ -292,16 +271,148 @@ def create_timeline_selector(all_years, selected_year):
     return fig.update_layout(modebar_remove=['zoom', 'pan', 'select', 'lasso2d'])
 
 
+def create_sankey_chart(medals_only, host_data, selected_noc, metric_col='total'):
+    """
+    Ultimate Resolution Sankey Chart:
+    - Maps EVERY single integer value (where possible) to a unique node.
+    - Removes 'buckets' logic in favor of exact values.
+    - Colors: Orange for Host, Blue/Purple for Guest.
+    - Height dynamically adjusts to number of nodes.
+    """
+    medals_data = get_processed_medals_data_by_score_and_type()
+    # --- 1. DATA PREP ---
+    df = medals_data[medals_data['noc'] == selected_noc].copy()
+    if df.empty:
+        return None
+
+    # Compute value metric
+    if metric_col == 'score':
+        df['value_metric'] = df['Gold']*3 + df['Silver']*2 + df['Bronze']
+        global_totals = medals_data.groupby('year').apply(lambda x: (x['Gold']*3 + x['Silver']*2 + x['Bronze']).sum())
+        metric_label = "Score"
+    elif metric_col == 'Gold':
+        df['value_metric'] = df['Gold']
+        global_totals = medals_data.groupby('year')['Gold'].sum()
+        metric_label = "Gold Medals"
+    else:
+        df['value_metric'] = df[['Gold','Silver','Bronze']].sum(axis=1)
+        global_totals = medals_data.groupby('year')[['Gold','Silver','Bronze']].sum().sum(axis=1)
+        metric_label = "Total Medals"
+
+    df['share'] = df.apply(lambda r: (r['value_metric'] / global_totals.get(r['year'],1))*100, axis=1)
+
+    host_years = host_data[host_data['host_noc'] == selected_noc]['year'].unique()
+
+    # --- 2. MAP EXACT VALUES ---
+    def map_values(series, step=1, is_percent=False):
+        max_val = series.max() if series.max() > 0 else 1
+        axis_points = np.arange(0, max_val+step, step) if not is_percent else np.arange(0, max_val+0.5, 0.25)
+        fmt = "{:.0f}" if not is_percent else "{:.1f}%"
+        labels = [fmt.format(x) for x in axis_points]
+        mapped = [labels[(np.abs(axis_points - val)).argmin()] for val in series]
+        return mapped, labels
+
+    df['medal_node'], medal_labels = map_values(df['value_metric'], step=1)
+    df['share_node'], share_labels = map_values(df['share'], is_percent=True)
+
+    # --- 3. CREATE FLOWS ---
+    flows = []
+    c_host = "rgba(230, 159, 0, 0.8)"   # Orange
+    c_guest = "rgba(86, 180, 233, 0.6)" # Blue/Purple
+
+    for _, row in df.iterrows():
+        is_host = row['year'] in host_years
+        node_status = "🏠 HOST" if is_host else "Guest"
+        node_medal = str(row['medal_node'])
+        node_share = str(row['share_node'])
+        color = c_host if is_host else c_guest
+
+        flows.append({'source': node_status, 'target': node_medal, 'value':1, 'color':color, 'label':str(row['year'])})
+        flows.append({'source': node_medal, 'target':node_share, 'value':1, 'color':color, 'label':str(row['year'])})
+
+    flow_df = pd.DataFrame(flows)
+    if flow_df.empty:
+        return None
+
+    flow_agg = flow_df.groupby(['source','target','color']).sum().reset_index()
+
+    # --- 4. POSITIONING ---
+    status_labels = ["🏠 HOST", "Guest"]
+    all_labels = status_labels + medal_labels + share_labels
+    node_map = {lbl:i for i,lbl in enumerate(all_labels)}
+
+    node_x = []
+    node_y = []
+    node_colors = []
+
+    def get_y_positions(labels):
+        return np.linspace(0.02, 0.98, len(labels))
+
+    medal_y = get_y_positions(medal_labels)
+    share_y = get_y_positions(share_labels)
+
+    for node in all_labels:
+        if node in status_labels:
+            node_x.append(0.01)
+            node_y.append(0.2 if "HOST" in node else 0.8)
+            node_colors.append(c_host if "HOST" in node else c_guest)
+        elif node in medal_labels:
+            node_x.append(0.5)
+            idx = medal_labels.index(node)
+            node_y.append(medal_y[idx] + np.random.uniform(-0.005,0.005))  # tiny offset to prevent glitch
+            node_colors.append("rgba(0,0,0,0.5)")
+        elif node in share_labels:
+            node_x.append(0.99)
+            idx = share_labels.index(node)
+            node_y.append(share_y[idx] + np.random.uniform(-0.005,0.005))
+            node_colors.append("rgba(0,0,0,0.5)")
+
+    # --- 5. FIGURE ---
+    dynamic_height = max(1200, len(medal_labels)*25)
+    fig = go.Figure(data=[go.Sankey(
+        arrangement="snap",
+        node=dict(
+            pad=10,
+            thickness=2,
+            line=dict(color="white", width=0),
+            label=all_labels,
+            color=node_colors,
+            x=node_x,
+            y=node_y
+        ),
+        link=dict(
+            source=flow_agg['source'].map(node_map),
+            target=flow_agg['target'].map(node_map),
+            value=flow_agg['value'],
+            color=flow_agg['color']
+        )
+    )])
+
+    fig.update_layout(
+        title_text=f"Impact of Hosting on {metric_label}",
+        font=dict(size=10, color="black", family="Arial"),
+        height=dynamic_height,
+        margin=dict(l=20, r=20, t=60, b=20),
+        annotations=[
+            dict(x=0.01, y=1.02, xref="paper", yref="paper", text="<b>Status</b>", showarrow=False, font=dict(size=14)),
+            dict(x=0.5, y=1.02, xref="paper", yref="paper", text=f"<b>{metric_label} (Exact)</b>", showarrow=False, font=dict(size=14)),
+            dict(x=0.99, y=1.02, xref="paper", yref="paper", text="<b>Share %</b>", showarrow=False, font=dict(size=14))
+        ]
+    )
+
+    return fig
+
+
 def show_host_advantage(host_data, medals_only, country_ref):
     # --- 1. METRIC SELECTOR LAYOUT ---
     c_title, c_metric = st.columns([3, 1])
     with c_title:
         st.title("The Host Effect")
         st.markdown("Does hosting the Olympics actually guarantee more medals?")
-    
+
     with c_metric:
         metric_choice = st.selectbox("Select Metric:", ["Total Medals", "Weighted Score", "Gold Medals"])
-    
+
     # Map selection to internal column name
     metric_map = {
         "Total Medals": "total_count",
@@ -309,45 +420,32 @@ def show_host_advantage(host_data, medals_only, country_ref):
         "Gold Medals": "Gold"
     }
     metric_col = metric_map[metric_choice]
-    
+
     # --- 2. DYNAMIC DATA CALCULATION ---
     # Re-calculate host data based on selection
     host_data = calculate_host_advantage_stats(metric_col=metric_col)
-    
-    # Also get the raw data for charts, filtered if necessary
-    # Also get the raw data for charts, filtered if necessary
-    medals_raw = get_processed_medals_data_by_score_and_type()
-    
-    # For Radar Chart: we need to pass a medals dataframe.
-    # If Gold is selected, we filter the raw dataframe to only include Gold medals 
-    # so the Radar counts (which counts items) reflect Gold counts.
-    # If Total or Score is selected, we pass distinct events. 
-    # Note: Radar counts items. For 'Score', item count != Score. 
-    # We will use Total Counts for Radar when Score is selected, to avoid confusion, 
-    # or we can leave it as is (counting events).
-    raw_for_radar = medals_raw.copy()
-    
-    # Filter for only actual medals (already done in processor, but safe to keep)
-    raw_for_radar = raw_for_radar.dropna(subset=['medal'])
-    
-    # Deduplication is now handled in get_processed_medals_data_by_score_and_type
-    # So raw_for_radar matches "Total Events" logic.
 
-    radar_view_mode = "All"
-    
+    medals_raw = get_processed_medals_data_by_score_and_type()
+    raw_for_dumbbell = medals_raw.copy()
+    # Data for YOUR Bar Chart (Subtraction logic)
+    bar_data = calculate_host_advantage_for_bar_chart()
+    # Data for HIS Sankey Chart (Division logic)
+    sankey_data = calculate_host_advantage_for_sankey()
+    # Filter for only actual medals (already done in processor, but safe to keep)
+    raw_for_dumbbell = raw_for_dumbbell.dropna(subset=['medal'])
     if metric_choice == "Gold Medals":
-         raw_for_radar = raw_for_radar[raw_for_radar['medal'] == 'Gold']
-    
-    # Define weight column for Radar if Score selected
-    radar_weight_col = None
+         raw_for_dumbbell = raw_for_dumbbell[raw_for_dumbbell['medal'] == 'Gold']
+
+    # Define weight column for dumbbell if Score selected
+    dumbbell_weight_col = None
     if metric_choice == "Weighted Score":
-        # Add a custom weight column to the raw dataframe for the radar to use
+        # Add a custom weight column to the raw dataframe for the dumbbell to use
         # Map: Gold=3, Silver=2, Bronze=1
         medal_weights = {'Gold': 3, 'Silver': 2, 'Bronze': 1}
         # Safely map, default to 0 if unknown
-        raw_for_radar['radar_weight'] = raw_for_radar['medal'].map(medal_weights).fillna(0)
-        radar_weight_col = 'radar_weight'
-    
+        raw_for_dumbbell['dumbbell_weight'] = raw_for_dumbbell['medal'].map(medal_weights).fillna(0)
+        dumbbell_weight_col = 'dumbbell_weight'
+
     # --- 3. PREPARE DATA FOR DROPDOWN ---
     noc_map = {}
     if not country_ref.empty:
@@ -362,19 +460,23 @@ def show_host_advantage(host_data, medals_only, country_ref):
 
     host_data['label'] = host_data.apply(get_label, axis=1)
     options = sorted(host_data['label'].unique(), reverse=True)
-    
+
     st.divider()
 
     # THE GLOBAL "BIG QUESTION" CHART ---
     st.subheader("The Big Picture: Does Hosting Pay Off?")
 
     # Calculate 'Lift %'
-    host_data['lift_percent'] = (host_data['lift'] - 1) * 100
+    bar_data['lift_percent'] = bar_data['lift'] * 100
 
-    host_data.loc[host_data['year'] == 1896, 'lift_percent'] = 0
-    host_data['color'] = host_data['lift_percent'].apply(lambda x: '#00A651' if x >= 0 else '#EE334E')
+    bar_data.loc[bar_data['year'] == 1896, 'lift_percent'] = 0
+    bar_data['color'] = bar_data['lift_percent'].apply(lambda x: '#6a994e' if x >= 0 else '#bc4749')
+
+    years_to_exclude = [1906, 1916, 1940, 1944]
+    bar_data = bar_data[~bar_data['year'].isin(years_to_exclude)]
+
     # Sort Data
-    global_chart_data = host_data.sort_values('year').reset_index(drop=True)
+    global_chart_data = bar_data.sort_values('year').reset_index(drop=True)
 
     # --- TIMELINE SLIDER LOGIC ---
 
@@ -412,26 +514,24 @@ def show_host_advantage(host_data, medals_only, country_ref):
     window_size = 9
     half_window = 4
 
-    start_idx = center_idx - half_window
-    end_idx = center_idx + half_window
+    # Calculate Window: 4 before, 4 after (Total 9)
+    start_idx = max(0, center_idx - 4)
+    end_idx = min(len(global_chart_data) - 1, start_idx + 8)
 
-    # Handle edges
-    if start_idx < 0:
-        start_idx = 0
-        end_idx = min(len(global_chart_data) - 1, window_size - 1)
-    elif end_idx >= len(global_chart_data):
-        end_idx = len(global_chart_data) - 1
-        start_idx = max(0, end_idx - window_size + 1)
+    # Adjust start if we are at the end of the timeline
+    if end_idx == len(global_chart_data) - 1:
+        start_idx = max(0, end_idx - 8)
 
-    filtered_global_data = global_chart_data.iloc[start_idx: end_idx + 1]
+    filtered_global_data = global_chart_data.iloc[start_idx: end_idx + 1].copy()
 
     # 4. Generate Enhanced Timeline Chart
     fig_global = go.Figure()
-
-    filtered_global_data['host_country_name'] = filtered_global_data['host_noc'].map(noc_map).fillna(filtered_global_data['host_noc'])
+    filtered_global_data['year_str'] = filtered_global_data['year'].astype(str)
+    filtered_global_data['host_country_name'] = (filtered_global_data['host_noc']
+                                                 .map(noc_map).fillna(filtered_global_data['host_noc']))
     # Enhanced Bar chart with dynamic colors and borders
     fig_global.add_trace(go.Bar(
-        x=filtered_global_data['year'],
+        x=filtered_global_data['year_str'],
         y=filtered_global_data['lift_percent'],
         marker=dict(
             color=filtered_global_data['color'],
@@ -444,17 +544,17 @@ def show_host_advantage(host_data, medals_only, country_ref):
 
     # Add a reference line for "No Change" (0%)
     fig_global.add_hline(y=0, line_dash="dash", line_color="black", line_width=1)
-
+    current_view_years = filtered_global_data['year_str'].tolist()
     fig_global.update_layout(
         yaxis_title="Boost / Drop (%)",
         xaxis_title="",
-        height=400,  # Made it slightly taller
+        height=400,
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
         xaxis=dict(
             type='category',
             categoryorder='array',
-            categoryarray=[str(y) for y in full_timeline],
+            categoryarray=current_view_years,
             fixedrange=True,
             showgrid=False,
             tickfont=dict(size=12, family="Arial Black")
@@ -479,20 +579,20 @@ def show_host_advantage(host_data, medals_only, country_ref):
         # Default to Sydney 2000 if available
         default_index = 0
         sydney_option = None
-        
+
         for i, opt in enumerate(options):
             if "2000" in opt and "Sydney" in opt:
                 default_index = i
                 sydney_option = opt
                 break
-        
+
         # Initialize session state if not present
         if "host_event_selector" not in st.session_state:
              if sydney_option:
                  st.session_state.host_event_selector = sydney_option
              else:
                  st.session_state.host_event_selector = options[0] if options else None
-        
+
         sel_event = st.selectbox("Select Host Event:", options, key="host_event_selector")
 
     # Extract Selection Variables EARLY
@@ -505,18 +605,17 @@ def show_host_advantage(host_data, medals_only, country_ref):
         h_year = int(row['year'])
         h_noc = row['host_noc']
         # FIX: Use the metric_col from the dynamic host_data
-        h_medals = int(row['total_medals']) 
+        h_medals = int(row['total_medals'])
         full_country_name = noc_map.get(h_noc, h_noc)
 
     st.write("")
     st.write("")
-    # --- RADAR CHART: Medal Distribution by Sport Category ---
+    # --- dumbbell CHART: Medal Distribution by Sport Category ---
     if sel_event and h_noc and h_year:
         st.subheader(f"Medal Distribution by Sport Category: {full_country_name} - {h_year}")
         st.caption(f"Comparing {h_year} performance across sport categories")
 
         # --- 1. PRE-CALCULATE KPIS ---
-        # FIX: Calculate pre-host stats dynamically using the new metric
         # We need the time series for this country using the selected metric
         stat_df = medals_raw[medals_raw['noc'] == h_noc]
         country_history = stat_df.groupby('year')[metric_col].sum().reset_index()
@@ -574,10 +673,10 @@ def show_host_advantage(host_data, medals_only, country_ref):
 
         # --- 4. FULL WIDTH CHART ---
         # Note: view_mode is set to "All" and the radio buttons were removed
-        # FIX: We pass the filtered raw data for radar to ensure it matches "Gold" if selected
-        radar_fig = create_host_radar_chart(raw_for_radar, host_data, h_noc, h_year, view_mode="All", weight_col=radar_weight_col)
-        if radar_fig:
-            st.plotly_chart(radar_fig, width='stretch')
+        # FIX: We pass the filtered raw data for dumbbell to ensure it matches "Gold" if selected
+        dumbbell_fig = create_host_dumbbell_chart(raw_for_dumbbell, host_data, h_noc, h_year, view_mode="All", weight_col=dumbbell_weight_col)
+        if dumbbell_fig:
+            st.plotly_chart(dumbbell_fig, width='stretch')
 
     st.divider()
     if sel_event:
@@ -591,10 +690,6 @@ def show_host_advantage(host_data, medals_only, country_ref):
             focus_year_val = None if focus_year == "All" else int(focus_year)
 
             if focus_year_val:
-                # Calculate data using Tally (includes Paris 2024)
-                # FIX: Use the SAME dynamic data source for consistency
-                # Calculate data using Tally (includes Paris 2024)
-                # FIX: Use the SAME dynamic data source for consistency
                 medals_data_dyn = get_processed_medals_data_by_score_and_type()
 
                 # Country medals for the focused year
@@ -648,136 +743,6 @@ def show_host_advantage(host_data, medals_only, country_ref):
             st.subheader(f"Performance Flow Analysis: {full_country_name}")
 
             # Sankey Chart (Integrated from SankeyChart branch)
-            fig_sankey = create_sankey_chart(medals_only, host_data, h_noc)
+            fig_sankey = create_sankey_chart(medals_only, sankey_data, h_noc)
             if fig_sankey:
-                st.plotly_chart(fig_sankey, use_container_width=True)
-
-
-def create_sankey_chart(medals_only, host_data, selected_noc):
-    """
-    Sankey Chart with FIXED UNIVERSAL ranges for consistent appearance.
-    All countries use the same medal/share buckets.
-    """
-    from data_processor import get_processed_total_medals_data
-    medals_data = get_processed_total_medals_data()
-
-    df = medals_data[medals_data['country_noc'] == selected_noc].copy()
-    if df.empty: return None
-
-    # Calculate global totals for share calculation
-    global_counts = medals_data.groupby('year')['total'].sum()
-    host_years = host_data[host_data['host_noc'] == selected_noc]['year'].unique()
-    
-    # Calculate share for each year
-    df['share'] = df.apply(lambda r: (r['total'] / global_counts.get(r['year'], 1)) * 100, axis=1)
-
-    # --- FIXED UNIVERSAL MEDAL RANGES (Reversed: highest first = top) ---
-    medal_labels = ["200+", "131-200", "81-130", "41-80", "16-40", "0-15"]
-    medal_thresholds_map = {"200+": 201, "131-200": 131, "81-130": 81, "41-80": 41, "16-40": 16, "0-15": 0}
-    
-    def get_medal_bucket(total):
-        if total >= 201: return "200+"
-        if total >= 131: return "131-200"
-        if total >= 81: return "81-130"
-        if total >= 41: return "41-80"
-        if total >= 16: return "16-40"
-        return "0-15"
-
-    # --- FIXED UNIVERSAL SHARE RANGES (Reversed: highest first = top) ---
-    share_labels = ["12%+", "8-12%", "5-8%", "3-5%", "1-3%", "0-1%"]
-    
-    def get_share_bucket(share_val):
-        if share_val >= 12: return "12%+"
-        if share_val >= 8: return "8-12%"
-        if share_val >= 5: return "5-8%"
-        if share_val >= 3: return "3-5%"
-        if share_val >= 1: return "1-3%"
-        return "0-1%"
-
-    # --- BUILD FLOW DATA ---
-    flows = []
-    for _, row in df.iterrows():
-        is_host = row['year'] in host_years
-        host_status = "🏠 HOST" if is_host else "Regular"
-        medal_cat = get_medal_bucket(row['total'])
-        share_cat = get_share_bucket(row['share'])
-
-        # Color: ORANGE for Host, BLUE for Regular
-        line_color = "rgba(255, 140, 0, 0.7)" if is_host else "rgba(70, 130, 180, 0.35)"
-
-        flows.append({'source': host_status, 'target': medal_cat, 'color': line_color})
-        flows.append({'source': medal_cat, 'target': share_cat, 'color': line_color})
-
-    flow_df = pd.DataFrame(flows)
-    if flow_df.empty: return None
-
-    # --- NODE SETUP (HOST first = top, then Regular) ---
-    nodes = ["🏠 HOST", "Regular"] + medal_labels + share_labels
-    node_map = {node: i for i, node in enumerate(nodes)}
-
-    # Aggregation
-    counts = flow_df.groupby(['source', 'target', 'color']).size().reset_index(name='value')
-
-    # --- NODE COLORS: Orange for HOST, Blue for Regular, gradients for buckets ---
-    node_colors = (
-        ["#FF8C00", "#4682B4"] +  # Host (Orange), Regular (Blue)
-        ["#005580", "#0077B3", "#3399CC", "#66B2D9", "#99CCE6", "#CCE5F2"] +  # Medal: dark->light (high->low)
-        ["#005580", "#0077B3", "#3399CC", "#66B2D9", "#99CCE6", "#CCE5F2"]    # Share: dark->light (high->low)
-    )
-
-    # --- EXPLICIT NODE POSITIONING (STRICT 3 COLUMNS) ---
-    # Left: Host Status (x=0.01)
-    # Middle: Medal Counts (x=0.5) - STRICTLY MEDALS
-    # Right: Share % (x=0.99) - STRICTLY SHARES
-    node_x = []
-    node_y = []
-    
-    for node in nodes:
-        if node == "🏠 HOST":
-            node_x.append(0.01)
-            node_y.append(0.25)
-        elif node == "Regular":
-            node_x.append(0.01)
-            node_y.append(0.75)
-        elif node in medal_labels:
-            # MIDDLE COLUMN
-            node_x.append(0.5) 
-            idx = medal_labels.index(node)
-            # Spread 6 buckets from top to bottom
-            node_y.append(0.1 + idx * 0.14)
-        elif node in share_labels:
-            # RIGHT COLUMN
-            node_x.append(0.99) 
-            idx = share_labels.index(node)
-            # Spread 6 buckets from top to bottom
-            node_y.append(0.1 + idx * 0.14)
-
-    # --- CREATE FIGURE ---
-    fig = go.Figure(data=[go.Sankey(
-        arrangement="fixed",  # Honors x/y positions strictly
-        node=dict(
-            pad=15,
-            thickness=20,
-            line=dict(color="#444", width=0.5),
-            label=nodes,
-            color=node_colors,
-            x=node_x,
-            y=node_y
-        ),
-        link=dict(
-            source=counts['source'].map(node_map),
-            target=counts['target'].map(node_map),
-            value=counts['value'],
-            color=counts['color']
-        )
-    )])
-
-    # --- LAYOUT (Large Right Margin for Labels) ---
-    fig.update_layout(
-        font=dict(size=12, color="#333", family="Arial"),
-        height=550,
-        margin=dict(l=10, r=130, t=10, b=10),
-        plot_bgcolor='white',
-        paper_bgcolor='white'
-    )
-    return fig
+                st.plotly_chart(fig_sankey, width='stretch')
