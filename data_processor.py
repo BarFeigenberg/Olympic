@@ -88,7 +88,7 @@ country_NOC_to_change = {
     "GDR": "GER"
 }
 
-# --- Sport Categories for Radar Chart (5 balanced categories) ---
+
 # --- Sport Categories for Range Chart (11 balanced categories) ---
 SPORT_CATEGORIES = {
     # 🏃 Athletics
@@ -163,8 +163,13 @@ def get_sport_category(sport_name):
     return SPORT_CATEGORIES.get(sport_name, "Other")
 
 
-def get_medals_by_sport_category(medals_df, noc, year=None):
-    """Aggregate medals by sport category for a country. Uses pre-deduplicated medals_df."""
+def get_medals_by_sport_category(medals_df, noc, year=None, weight_col=None):
+    """
+    Aggregate medals by sport category for a country. 
+    Uses pre-deduplicated medals_df.
+    If weight_col is provided, sums that column (e.g. for Score). 
+    Otherwise counts rows (for Total/Gold counts).
+    """
     if medals_df.empty:
         return {cat: 0 for cat in CATEGORY_ORDER}
     
@@ -176,7 +181,11 @@ def get_medals_by_sport_category(medals_df, noc, year=None):
         return {cat: 0 for cat in CATEGORY_ORDER}
     
     df['category'] = df['sport'].apply(get_sport_category)
-    counts = df.groupby('category').size().to_dict()
+    
+    if weight_col and weight_col in df.columns:
+        counts = df.groupby('category')[weight_col].sum().to_dict()
+    else:
+        counts = df.groupby('category').size().to_dict()
     
     return {cat: counts.get(cat, 0) for cat in CATEGORY_ORDER}
 
@@ -330,6 +339,13 @@ def get_processed_main_data():
         merged_df['team'] = merged_df['country']
 
     df = merged_df.drop(columns=['country'], errors='ignore')
+
+    # FIX: Clean 'medal' column immediately to ensure consistency across the app
+    if 'medal' in df.columns:
+        df['medal'] = df['medal'].astype(str).str.strip().str.title()
+        # FIX: Standardize single letters to full names (e.g. 'G' -> 'Gold')
+        medal_map = {'G': 'Gold', 'S': 'Silver', 'B': 'Bronze'}
+        df['medal'] = df['medal'].replace(medal_map)
 
     return df
 
@@ -497,7 +513,7 @@ def get_processed_athletics_data():
 
 
 @st.cache_data
-def get_processed_medals_data():
+def get_processed_total_medals_data():
     df_medals = load_raw_tally_data()
     df_paris_medals = load_raw_paris_data()
     countries = get_processed_country_data()
@@ -551,6 +567,194 @@ def get_processed_medals_data():
         os.replace('Olympic_Games_Medal_Tally_Updated.csv', 'Olympic_Games_Medal_Tally.csv')
 
     return updated_medals_df
+
+
+@st.cache_data
+def get_processed_medals_data_by_score_and_type():
+    """
+    Returns a DataFrame with medal counts by type (Gold, Silver, Bronze)
+    and a weighted score (G=3, S=2, B=1).
+    Deduplicates events so that team sports count as 1 medal per country per event.
+    Returns DETAILED event-level data (preserving Sport/Event columns) for historical data.
+    """
+    # --- 1. Historical Data (Detailed) ---
+    df = get_processed_main_data()
+    
+    if not df.empty:
+        # Filter for actual medals
+        df = df[df['medal'].isin(['Gold', 'Silver', 'Bronze'])].copy()
+        
+        # Deduplicate: One medal per Event per Country per Year
+        # This is the CRITICAL fix: We count Events, not Athletes.
+        df_dedup = df.drop_duplicates(subset=['year', 'event', 'noc', 'medal']).copy()
+        
+        # Add basic metrics
+        df_dedup['total_count'] = 1
+        
+        weights = {'Gold': 3, 'Silver': 2, 'Bronze': 1}
+        df_dedup['score'] = df_dedup['medal'].map(weights).fillna(0)
+        
+        # Create dummy columns for consistency with previous schema (if needed by other consumers)
+        # But primarily we want the detailed rows. 
+        # For compatibility with groupby consumers, mapped 1/0 columns are useful.
+        df_dedup['Gold'] = (df_dedup['medal'] == 'Gold').astype(int)
+        df_dedup['Silver'] = (df_dedup['medal'] == 'Silver').astype(int)
+        df_dedup['Bronze'] = (df_dedup['medal'] == 'Bronze').astype(int)
+        
+        historical_detailed = df_dedup
+    else:
+        historical_detailed = pd.DataFrame(columns=['team', 'noc', 'year', 'sport', 'event', 'medal', 'Gold', 'Silver', 'Bronze', 'score', 'total_count'])
+
+    # --- 2. Paris 2024 Data (Tally - No Sport Detail) ---
+    df_paris = load_raw_paris_data()
+    if not df_paris.empty:
+        # Clean columns
+        df_paris.columns = df_paris.columns.str.lower().str.strip()
+        
+        # Rename strictly to match our schema (Total counts only)
+        rename_map = {
+            'gold medal': 'Gold',
+            'silver medal': 'Silver',
+            'bronze medal': 'Bronze',
+            'country_code': 'noc',
+            'country': 'team'
+        }
+        df_paris = df_paris.rename(columns=rename_map)
+        df_paris['year'] = 2024
+        
+        # CLEANUP: Clean NOCs
+        df_paris['noc'] = df_paris['noc'].replace(country_NOC_to_change)
+        
+         # CLEANUP: Get Standardized Team Names using our central country processor
+        countries_ref = get_processed_country_data()
+        if not countries_ref.empty:
+             df_paris = df_paris.merge(countries_ref[['noc', 'country']], on='noc', how='left')
+             df_paris.rename(columns={'country': 'team_std'}, inplace=True)
+             df_paris['team'] = df_paris['team_std'].fillna(df_paris.get('team', df_paris['noc']))
+             df_paris.drop(columns=['team_std'], inplace=True, errors='ignore')
+
+        # Ensure numeric
+        for c in ['Gold', 'Silver', 'Bronze']:
+             df_paris[c] = pd.to_numeric(df_paris.get(c, 0), errors='coerce').fillna(0).astype(int)
+
+        # Calculate Scores
+        df_paris['score'] = (df_paris['Gold'] * 3) + (df_paris['Silver'] * 2) + (df_paris['Bronze'] * 1)
+        df_paris['total_count'] = df_paris['Gold'] + df_paris['Silver'] + df_paris['Bronze']
+        
+        # Create "Fake" detailed rows? 
+        # No, we just append. Columns 'sport', 'event', 'medal' will be NaN.
+        # This implies Paris data won't show up in Breakdown charts (because no sport),
+        # but will work for Totals/KPIs (summing columns).
+        paris_final = df_paris
+    else:
+        paris_final = pd.DataFrame()
+
+    # --- 3. Combine ---
+    # Concatenate using compatible columns.
+    # We prioritize Historical Detailed because it has Sports.
+    # If 2024 is in historical, we ignore Paris Tally (as detail is better).
+    if 2024 in historical_detailed['year'].values:
+        final_df = historical_detailed
+    else:
+        final_df = pd.concat([historical_detailed, paris_final], ignore_index=True)
+        
+    return final_df
+
+
+
+@st.cache_data
+def calculate_host_advantage_stats(metric_col='total_count'):
+    """
+    Dynamically calculates Host Advantage statistics based on a specific metric 
+    (e.g., 'total_count', 'score', 'Gold').
+    Replicates the logic of create_host_advantage_file but on-the-fly.
+    """
+    # 1. Get Base Data (Detailed & Consolidated)
+    # We use the ROBUST function we just built
+    source_df = get_processed_medals_data_by_medal_type()
+    
+    if source_df.empty:
+        return pd.DataFrame()
+
+    # 2. Get Host Info
+    games_df = load_raw_games_data() # For mapping Year -> Host City/NOC
+    if games_df.empty:
+        return pd.DataFrame()
+        
+    games_df.columns = games_df.columns.str.lower()
+    
+    # Filter Summer Games < 2024 (Paris is handled separately or via games_df if updated, 
+    # but usually games_df is historical. Paris might be missing or present depending on file version).
+    # We rely on source_df having data for 2024 if available.
+    
+    # We need a trustworthy mapping of Year -> Host NOC
+    # Standard games.csv usually goes up to 2016 or 2020.
+    games_summer = games_df[games_df['edition'].str.contains('Summer', case=False, na=False)][['year', 'city', 'country_noc']]
+    
+    # Add Paris 2024 manually if missing from games.csv
+    if 2024 not in games_summer['year'].values:
+        paris_row = pd.DataFrame([{'year': 2024, 'city': 'Paris', 'country_noc': 'FRA'}])
+        games_summer = pd.concat([games_summer, paris_row], ignore_index=True)
+        
+    hosts_map = games_summer.drop_duplicates(subset=['year']).set_index('year')
+    
+    # 3. Calculate Global Totals per Year (for the selected metric)
+    global_totals = source_df.groupby('year')[metric_col].sum().reset_index()
+    global_totals.rename(columns={metric_col: 'global_total'}, inplace=True)
+    
+    # 4. Calculate Stats for Each Host Year
+    results = []
+    
+    known_years = sorted(hosts_map.index.unique())
+    
+    # Pre-calculate percentage share for ALL countries/years to speed up 'Avg' calc
+    # Merge global total back to source
+    df_with_global = source_df.merge(global_totals, on='year', how='left')
+    df_with_global['share'] = df_with_global[metric_col] / df_with_global['global_total']
+    
+    for year in known_years:
+        host_info = hosts_map.loc[year]
+        if isinstance(host_info, pd.DataFrame): 
+             host_info = host_info.iloc[0] # Handle duplicate years if any
+             
+        h_noc = host_info['country_noc']
+        h_city = host_info['city']
+        
+        # Current Performance (Host Year)
+        # Check if we have data for this host in this year
+        host_perf = df_with_global[(df_with_global['year'] == year) & (df_with_global['noc'] == h_noc)]
+        
+        if host_perf.empty:
+            continue # No medals for host (rare, but possible or data missing)
+            
+        current_total = host_perf[metric_col].sum()
+        current_share = host_perf['share'].sum() # Should be 1 row, but sum safe
+        global_total = host_perf['global_total'].values[0]
+        
+        # Historical Average (Excluding Host Year)
+        # Filter for this country, NOT this year
+        history = df_with_global[(df_with_global['noc'] == h_noc) & (df_with_global['year'] != year)]
+        avg_share = history['share'].mean() if not history.empty else 0
+        
+        # Lift
+        lift = (current_share / avg_share) if avg_share > 0 else 0
+        
+        results.append({
+            'year': year,
+            'host_city': h_city,
+            'host_noc': h_noc,
+            'total_medals': current_total, # This is actually 'metric_value' (e.g. Score)
+            'global_total': global_total,
+            'medal_percentage': current_share,
+            'avg_percentage': avg_share,
+            'lift': lift
+        })
+        
+    final_df = pd.DataFrame(results)
+    if not final_df.empty:
+        final_df = final_df.sort_values('year')
+        
+    return final_df
 
 
 # --- 4. Population Processor ---
@@ -833,25 +1037,26 @@ def calculate_medals_per_million(df):
 @st.cache_data
 def get_processed_gapminder_data():
     df_main = get_processed_main_data()
-    df_medals = get_processed_medals_data()
+    # Use robust data source with both Total and Score
+    df_medals_detailed = get_processed_medals_data_by_score_and_type()
+    
     pop_df = get_combined_population_data()
     lex_df = get_processed_life_expectancy_data()
 
-    if df_main.empty or df_medals.empty:
+    if df_main.empty or df_medals_detailed.empty:
         return pd.DataFrame()
 
     # Calculate delegation size
     delegation = df_main.groupby(['year', 'noc'])['player_id'].nunique().reset_index().rename(
         columns={'player_id': 'delegation_size'})
 
-    # Prepare medals data
-    medals_subset = df_medals[['year', 'country_noc', 'total']].rename(columns={
-        'country_noc': 'noc',
-        'total': 'medals'
-    })
+    # Prepare medals data: Aggregate Event-Level data to NOC Level
+    # Summing 'total_count' (Events) and 'score' (Weighted)
+    medals_agg = df_medals_detailed.groupby(['year', 'noc'])[['total_count', 'score']].sum().reset_index()
+    medals_agg = medals_agg.rename(columns={'total_count': 'medals'}) # Rename for compatibility
 
     # Merge delegation size with medals
-    stats = pd.merge(delegation, medals_subset, on=['year', 'noc'], how='left').fillna({'medals': 0})
+    stats = pd.merge(delegation, medals_agg, on=['year', 'noc'], how='left').fillna({'medals': 0, 'score': 0})
 
     # Get country names
     ref = get_name_map()

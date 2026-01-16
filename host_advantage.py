@@ -2,7 +2,7 @@ import plotly.graph_objects as go
 from data_processor import *
 
 
-def create_host_radar_chart(medals_only, host_data, h_noc, h_year, view_mode="All"):
+def create_host_radar_chart(medals_only, host_data, h_noc, h_year, view_mode="All", weight_col=None):
     if medals_only.empty:
         return None
 
@@ -19,7 +19,7 @@ def create_host_radar_chart(medals_only, host_data, h_noc, h_year, view_mode="Al
     for cat in categories:
         all_vals = []
         for y in country_years:
-            val = get_medals_by_sport_category(medals_only, h_noc, y).get(cat, 0)
+            val = get_medals_by_sport_category(medals_only, h_noc, y, weight_col).get(cat, 0)
             all_vals.append(val)
 
         if not all_vals:
@@ -29,11 +29,11 @@ def create_host_radar_chart(medals_only, host_data, h_noc, h_year, view_mode="Al
         stats[cat] = {
             'min': min(all_vals),
             'max': max(all_vals),
-            'current': get_medals_by_sport_category(medals_only, h_noc, current_year).get(cat,
+            'current': get_medals_by_sport_category(medals_only, h_noc, current_year, weight_col).get(cat,
                                                                                           0) if current_year else 0,
-            'past_avg': (sum(p_vals := [get_medals_by_sport_category(medals_only, h_noc, y).get(cat, 0) for y in
+            'past_avg': (sum(p_vals := [get_medals_by_sport_category(medals_only, h_noc, y, weight_col).get(cat, 0) for y in
                                         past_years]) / len(p_vals)) if past_years else None,
-            'future_avg': (sum(f_vals := [get_medals_by_sport_category(medals_only, h_noc, y).get(cat, 0) for y in
+            'future_avg': (sum(f_vals := [get_medals_by_sport_category(medals_only, h_noc, y, weight_col).get(cat, 0) for y in
                                           future_years]) / len(f_vals)) if future_years else None
         }
 
@@ -126,8 +126,9 @@ def create_host_radar_chart(medals_only, host_data, h_noc, h_year, view_mode="Al
 
 def create_parallel_coordinates_chart(medals_only, host_data, selected_noc, focus_year=None):
     # --- FIX: Use medals_data (Tally) for accurate counts including Paris 2024 ---
-    from data_processor import get_processed_medals_data
-    medals_data = get_processed_medals_data()
+    # --- FIX: Use medals_data (Tally) for accurate counts including Paris 2024 ---
+    from data_processor import get_processed_total_medals_data
+    medals_data = get_processed_total_medals_data()
 
     if medals_data.empty:
         return None
@@ -292,7 +293,62 @@ def create_timeline_selector(all_years, selected_year):
 
 
 def show_host_advantage(host_data, medals_only, country_ref):
-    # --- 1. PREPARE DATA FOR DROPDOWN (Must be done before layout) ---
+    # --- 1. METRIC SELECTOR LAYOUT ---
+    c_title, c_metric = st.columns([3, 1])
+    with c_title:
+        st.title("The Host Effect")
+        st.markdown("Does hosting the Olympics actually guarantee more medals?")
+    
+    with c_metric:
+        metric_choice = st.selectbox("Select Metric:", ["Total Medals", "Weighted Score", "Gold Medals"])
+    
+    # Map selection to internal column name
+    metric_map = {
+        "Total Medals": "total_count",
+        "Weighted Score": "score",
+        "Gold Medals": "Gold"
+    }
+    metric_col = metric_map[metric_choice]
+    
+    # --- 2. DYNAMIC DATA CALCULATION ---
+    # Re-calculate host data based on selection
+    host_data = calculate_host_advantage_stats(metric_col=metric_col)
+    
+    # Also get the raw data for charts, filtered if necessary
+    # Also get the raw data for charts, filtered if necessary
+    medals_raw = get_processed_medals_data_by_score_and_type()
+    
+    # For Radar Chart: we need to pass a medals dataframe.
+    # If Gold is selected, we filter the raw dataframe to only include Gold medals 
+    # so the Radar counts (which counts items) reflect Gold counts.
+    # If Total or Score is selected, we pass distinct events. 
+    # Note: Radar counts items. For 'Score', item count != Score. 
+    # We will use Total Counts for Radar when Score is selected, to avoid confusion, 
+    # or we can leave it as is (counting events).
+    raw_for_radar = medals_raw.copy()
+    
+    # Filter for only actual medals (already done in processor, but safe to keep)
+    raw_for_radar = raw_for_radar.dropna(subset=['medal'])
+    
+    # Deduplication is now handled in get_processed_medals_data_by_score_and_type
+    # So raw_for_radar matches "Total Events" logic.
+
+    radar_view_mode = "All"
+    
+    if metric_choice == "Gold Medals":
+         raw_for_radar = raw_for_radar[raw_for_radar['medal'] == 'Gold']
+    
+    # Define weight column for Radar if Score selected
+    radar_weight_col = None
+    if metric_choice == "Weighted Score":
+        # Add a custom weight column to the raw dataframe for the radar to use
+        # Map: Gold=3, Silver=2, Bronze=1
+        medal_weights = {'Gold': 3, 'Silver': 2, 'Bronze': 1}
+        # Safely map, default to 0 if unknown
+        raw_for_radar['radar_weight'] = raw_for_radar['medal'].map(medal_weights).fillna(0)
+        radar_weight_col = 'radar_weight'
+    
+    # --- 3. PREPARE DATA FOR DROPDOWN ---
     noc_map = {}
     if not country_ref.empty:
         noc_map = dict(zip(country_ref['noc'], country_ref['country']))
@@ -306,10 +362,7 @@ def show_host_advantage(host_data, medals_only, country_ref):
 
     host_data['label'] = host_data.apply(get_label, axis=1)
     options = sorted(host_data['label'].unique(), reverse=True)
-
-    # --- 2. NEW LAYOUT: Title Left, Dropdown Right ---
-    st.title("The Host Effect")
-    st.markdown("Does hosting the Olympics actually guarantee more medals?")
+    
     st.divider()
 
     # THE GLOBAL "BIG QUESTION" CHART ---
@@ -451,7 +504,8 @@ def show_host_advantage(host_data, medals_only, country_ref):
         row = host_data[host_data['label'] == sel_event].iloc[0]
         h_year = int(row['year'])
         h_noc = row['host_noc']
-        h_medals = int(row['total_medals'])
+        # FIX: Use the metric_col from the dynamic host_data
+        h_medals = int(row['total_medals']) 
         full_country_name = noc_map.get(h_noc, h_noc)
 
     st.write("")
@@ -462,9 +516,12 @@ def show_host_advantage(host_data, medals_only, country_ref):
         st.caption(f"Comparing {h_year} performance across sport categories")
 
         # --- 1. PRE-CALCULATE KPIS ---
-        country_history = medals_only[medals_only['noc'] == h_noc].groupby('year')['medal'].count().reset_index()
+        # FIX: Calculate pre-host stats dynamically using the new metric
+        # We need the time series for this country using the selected metric
+        stat_df = medals_raw[medals_raw['noc'] == h_noc]
+        country_history = stat_df.groupby('year')[metric_col].sum().reset_index()
         pre_years = country_history[(country_history['year'] < h_year) & (country_history['year'] >= h_year - 12)]
-        avg_pre = pre_years['medal'].mean() if not pre_years.empty else 0
+        avg_pre = pre_years[metric_col].mean() if not pre_years.empty else 0
         diff = h_medals - avg_pre
         boost_pct = (diff / avg_pre * 100) if avg_pre > 0 else 0
 
@@ -517,7 +574,8 @@ def show_host_advantage(host_data, medals_only, country_ref):
 
         # --- 4. FULL WIDTH CHART ---
         # Note: view_mode is set to "All" and the radio buttons were removed
-        radar_fig = create_host_radar_chart(medals_only, host_data, h_noc, h_year, view_mode="All")
+        # FIX: We pass the filtered raw data for radar to ensure it matches "Gold" if selected
+        radar_fig = create_host_radar_chart(raw_for_radar, host_data, h_noc, h_year, view_mode="All", weight_col=radar_weight_col)
         if radar_fig:
             st.plotly_chart(radar_fig, width='stretch')
 
@@ -534,16 +592,18 @@ def show_host_advantage(host_data, medals_only, country_ref):
 
             if focus_year_val:
                 # Calculate data using Tally (includes Paris 2024)
-                from data_processor import get_processed_medals_data
-                medals_data = get_processed_medals_data()
+                # FIX: Use the SAME dynamic data source for consistency
+                # Calculate data using Tally (includes Paris 2024)
+                # FIX: Use the SAME dynamic data source for consistency
+                medals_data_dyn = get_processed_medals_data_by_score_and_type()
 
                 # Country medals for the focused year
-                y_data = medals_data[
-                    (medals_data['country_noc'] == h_noc) & (medals_data['year'] == focus_year_val)]
-                m_count = int(y_data['total'].sum()) if not y_data.empty else 0
+                y_data = medals_data_dyn[
+                    (medals_data_dyn['noc'] == h_noc) & (medals_data_dyn['year'] == focus_year_val)]
+                m_count = int(y_data[metric_col].sum()) if not y_data.empty else 0
 
                 # Global total for the focused year
-                g_total = medals_data[medals_data['year'] == focus_year_val]['total'].sum()
+                g_total = medals_data_dyn[medals_data_dyn['year'] == focus_year_val][metric_col].sum()
                 share = (m_count / g_total * 100) if g_total > 0 else 0
                 is_host_year = focus_year_val in host_data[host_data['host_noc'] == h_noc]['year'].values
 

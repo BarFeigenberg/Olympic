@@ -101,7 +101,7 @@ try:
         athletics_df = get_processed_athletics_data()
         gap_df = get_processed_gapminder_data()
         country_ref = load_raw_country_data()
-        medals_data = get_processed_medals_data()
+        medals_data = get_processed_total_medals_data()
 
         medals_only = data[data['medal'] != 'No medal']
         medals_only = medals_only.drop_duplicates(subset=['year', 'event', 'noc', 'medal'])
