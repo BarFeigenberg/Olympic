@@ -643,3 +643,141 @@ def show_host_advantage(host_data, medals_only, country_ref):
             fig_parcoords = create_parallel_coordinates_chart(medals_only, host_data, h_noc, focus_year_val)
             if fig_parcoords:
                 st.plotly_chart(fig_parcoords, width='stretch')
+
+            st.divider()
+            st.subheader(f"Performance Flow Analysis: {full_country_name}")
+
+            # Sankey Chart (Integrated from SankeyChart branch)
+            fig_sankey = create_sankey_chart(medals_only, host_data, h_noc)
+            if fig_sankey:
+                st.plotly_chart(fig_sankey, use_container_width=True)
+
+
+def create_sankey_chart(medals_only, host_data, selected_noc):
+    """
+    Sankey Chart with FIXED UNIVERSAL ranges for consistent appearance.
+    All countries use the same medal/share buckets.
+    """
+    from data_processor import get_processed_total_medals_data
+    medals_data = get_processed_total_medals_data()
+
+    df = medals_data[medals_data['country_noc'] == selected_noc].copy()
+    if df.empty: return None
+
+    # Calculate global totals for share calculation
+    global_counts = medals_data.groupby('year')['total'].sum()
+    host_years = host_data[host_data['host_noc'] == selected_noc]['year'].unique()
+    
+    # Calculate share for each year
+    df['share'] = df.apply(lambda r: (r['total'] / global_counts.get(r['year'], 1)) * 100, axis=1)
+
+    # --- FIXED UNIVERSAL MEDAL RANGES (Reversed: highest first = top) ---
+    medal_labels = ["200+", "131-200", "81-130", "41-80", "16-40", "0-15"]
+    medal_thresholds_map = {"200+": 201, "131-200": 131, "81-130": 81, "41-80": 41, "16-40": 16, "0-15": 0}
+    
+    def get_medal_bucket(total):
+        if total >= 201: return "200+"
+        if total >= 131: return "131-200"
+        if total >= 81: return "81-130"
+        if total >= 41: return "41-80"
+        if total >= 16: return "16-40"
+        return "0-15"
+
+    # --- FIXED UNIVERSAL SHARE RANGES (Reversed: highest first = top) ---
+    share_labels = ["12%+", "8-12%", "5-8%", "3-5%", "1-3%", "0-1%"]
+    
+    def get_share_bucket(share_val):
+        if share_val >= 12: return "12%+"
+        if share_val >= 8: return "8-12%"
+        if share_val >= 5: return "5-8%"
+        if share_val >= 3: return "3-5%"
+        if share_val >= 1: return "1-3%"
+        return "0-1%"
+
+    # --- BUILD FLOW DATA ---
+    flows = []
+    for _, row in df.iterrows():
+        is_host = row['year'] in host_years
+        host_status = "🏠 HOST" if is_host else "Regular"
+        medal_cat = get_medal_bucket(row['total'])
+        share_cat = get_share_bucket(row['share'])
+
+        # Color: ORANGE for Host, BLUE for Regular
+        line_color = "rgba(255, 140, 0, 0.7)" if is_host else "rgba(70, 130, 180, 0.35)"
+
+        flows.append({'source': host_status, 'target': medal_cat, 'color': line_color})
+        flows.append({'source': medal_cat, 'target': share_cat, 'color': line_color})
+
+    flow_df = pd.DataFrame(flows)
+    if flow_df.empty: return None
+
+    # --- NODE SETUP (HOST first = top, then Regular) ---
+    nodes = ["🏠 HOST", "Regular"] + medal_labels + share_labels
+    node_map = {node: i for i, node in enumerate(nodes)}
+
+    # Aggregation
+    counts = flow_df.groupby(['source', 'target', 'color']).size().reset_index(name='value')
+
+    # --- NODE COLORS: Orange for HOST, Blue for Regular, gradients for buckets ---
+    node_colors = (
+        ["#FF8C00", "#4682B4"] +  # Host (Orange), Regular (Blue)
+        ["#005580", "#0077B3", "#3399CC", "#66B2D9", "#99CCE6", "#CCE5F2"] +  # Medal: dark->light (high->low)
+        ["#005580", "#0077B3", "#3399CC", "#66B2D9", "#99CCE6", "#CCE5F2"]    # Share: dark->light (high->low)
+    )
+
+    # --- EXPLICIT NODE POSITIONING (STRICT 3 COLUMNS) ---
+    # Left: Host Status (x=0.01)
+    # Middle: Medal Counts (x=0.5) - STRICTLY MEDALS
+    # Right: Share % (x=0.99) - STRICTLY SHARES
+    node_x = []
+    node_y = []
+    
+    for node in nodes:
+        if node == "🏠 HOST":
+            node_x.append(0.01)
+            node_y.append(0.25)
+        elif node == "Regular":
+            node_x.append(0.01)
+            node_y.append(0.75)
+        elif node in medal_labels:
+            # MIDDLE COLUMN
+            node_x.append(0.5) 
+            idx = medal_labels.index(node)
+            # Spread 6 buckets from top to bottom
+            node_y.append(0.1 + idx * 0.14)
+        elif node in share_labels:
+            # RIGHT COLUMN
+            node_x.append(0.99) 
+            idx = share_labels.index(node)
+            # Spread 6 buckets from top to bottom
+            node_y.append(0.1 + idx * 0.14)
+
+    # --- CREATE FIGURE ---
+    fig = go.Figure(data=[go.Sankey(
+        arrangement="fixed",  # Honors x/y positions strictly
+        node=dict(
+            pad=15,
+            thickness=20,
+            line=dict(color="#444", width=0.5),
+            label=nodes,
+            color=node_colors,
+            x=node_x,
+            y=node_y
+        ),
+        link=dict(
+            source=counts['source'].map(node_map),
+            target=counts['target'].map(node_map),
+            value=counts['value'],
+            color=counts['color']
+        )
+    )])
+
+    # --- LAYOUT (Large Right Margin for Labels) ---
+    fig.update_layout(
+        font=dict(size=12, color="#333", family="Arial"),
+        height=550,
+        margin=dict(l=10, r=130, t=10, b=10),
+        plot_bgcolor='white',
+        paper_bgcolor='white'
+    )
+    return fig
