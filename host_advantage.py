@@ -125,24 +125,24 @@ def create_host_dumbbell_chart(medals_only, host_data, h_noc, h_year, view_mode=
     return fig
 
 
-def create_parallel_coordinates_chart(medals_only, host_data, selected_noc, focus_year=None):
+def create_parallel_coordinates_chart(medals_only, host_data, selected_noc, focus_year=None, metric_col="total_count"):
     # --- FIX: Use medals_data (Tally) for accurate counts including Paris 2024 ---
-    from data_processor import get_processed_total_medals_data
-    medals_data = get_processed_total_medals_data()
+    from data_processor import get_processed_medals_data_by_score_and_type
+    medals_data = get_processed_medals_data_by_score_and_type()
 
     if medals_data.empty:
         return None
 
     # Calculate global totals per year
-    global_counts = medals_data.groupby('year')['total'].sum().reset_index()
+    global_counts = medals_data.groupby('year')[metric_col].sum().reset_index()
     global_counts.columns = ['year', 'global_total']
 
     # Get country-specific data
-    country_data = medals_data[medals_data['country_noc'] == selected_noc]
+    country_data = medals_data[medals_data['noc'] == selected_noc]
     if country_data.empty:
         return None
 
-    country_stats = country_data.groupby('year')['total'].sum().reset_index()
+    country_stats = country_data.groupby('year')[metric_col].sum().reset_index()
     country_stats.columns = ['year', 'country_total']
 
     df = pd.merge(country_stats, global_counts, on='year', how='left')
@@ -271,136 +271,7 @@ def create_timeline_selector(all_years, selected_year):
     return fig.update_layout(modebar_remove=['zoom', 'pan', 'select', 'lasso2d'])
 
 
-def create_sankey_chart(medals_only, host_data, selected_noc, metric_col='total'):
-    """
-    Ultimate Resolution Sankey Chart:
-    - Maps EVERY single integer value (where possible) to a unique node.
-    - Removes 'buckets' logic in favor of exact values.
-    - Colors: Orange for Host, Blue/Purple for Guest.
-    - Height dynamically adjusts to number of nodes.
-    """
-    medals_data = get_processed_medals_data_by_score_and_type()
-    # --- 1. DATA PREP ---
-    df = medals_data[medals_data['noc'] == selected_noc].copy()
-    if df.empty:
-        return None
 
-    # Compute value metric
-    if metric_col == 'score':
-        df['value_metric'] = df['Gold']*3 + df['Silver']*2 + df['Bronze']
-        global_totals = medals_data.groupby('year').apply(lambda x: (x['Gold']*3 + x['Silver']*2 + x['Bronze']).sum())
-        metric_label = "Score"
-    elif metric_col == 'Gold':
-        df['value_metric'] = df['Gold']
-        global_totals = medals_data.groupby('year')['Gold'].sum()
-        metric_label = "Gold Medals"
-    else:
-        df['value_metric'] = df[['Gold','Silver','Bronze']].sum(axis=1)
-        global_totals = medals_data.groupby('year')[['Gold','Silver','Bronze']].sum().sum(axis=1)
-        metric_label = "Total Medals"
-
-    df['share'] = df.apply(lambda r: (r['value_metric'] / global_totals.get(r['year'],1))*100, axis=1)
-
-    host_years = host_data[host_data['host_noc'] == selected_noc]['year'].unique()
-
-    # --- 2. MAP EXACT VALUES ---
-    def map_values(series, step=1, is_percent=False):
-        max_val = series.max() if series.max() > 0 else 1
-        axis_points = np.arange(0, max_val+step, step) if not is_percent else np.arange(0, max_val+0.5, 0.25)
-        fmt = "{:.0f}" if not is_percent else "{:.1f}%"
-        labels = [fmt.format(x) for x in axis_points]
-        mapped = [labels[(np.abs(axis_points - val)).argmin()] for val in series]
-        return mapped, labels
-
-    df['medal_node'], medal_labels = map_values(df['value_metric'], step=1)
-    df['share_node'], share_labels = map_values(df['share'], is_percent=True)
-
-    # --- 3. CREATE FLOWS ---
-    flows = []
-    c_host = "rgba(230, 159, 0, 0.8)"   # Orange
-    c_guest = "rgba(86, 180, 233, 0.6)" # Blue/Purple
-
-    for _, row in df.iterrows():
-        is_host = row['year'] in host_years
-        node_status = "🏠 HOST" if is_host else "Guest"
-        node_medal = str(row['medal_node'])
-        node_share = str(row['share_node'])
-        color = c_host if is_host else c_guest
-
-        flows.append({'source': node_status, 'target': node_medal, 'value':1, 'color':color, 'label':str(row['year'])})
-        flows.append({'source': node_medal, 'target':node_share, 'value':1, 'color':color, 'label':str(row['year'])})
-
-    flow_df = pd.DataFrame(flows)
-    if flow_df.empty:
-        return None
-
-    flow_agg = flow_df.groupby(['source','target','color']).sum().reset_index()
-
-    # --- 4. POSITIONING ---
-    status_labels = ["🏠 HOST", "Guest"]
-    all_labels = status_labels + medal_labels + share_labels
-    node_map = {lbl:i for i,lbl in enumerate(all_labels)}
-
-    node_x = []
-    node_y = []
-    node_colors = []
-
-    def get_y_positions(labels):
-        return np.linspace(0.02, 0.98, len(labels))
-
-    medal_y = get_y_positions(medal_labels)
-    share_y = get_y_positions(share_labels)
-
-    for node in all_labels:
-        if node in status_labels:
-            node_x.append(0.01)
-            node_y.append(0.2 if "HOST" in node else 0.8)
-            node_colors.append(c_host if "HOST" in node else c_guest)
-        elif node in medal_labels:
-            node_x.append(0.5)
-            idx = medal_labels.index(node)
-            node_y.append(medal_y[idx] + np.random.uniform(-0.005,0.005))  # tiny offset to prevent glitch
-            node_colors.append("rgba(0,0,0,0.5)")
-        elif node in share_labels:
-            node_x.append(0.99)
-            idx = share_labels.index(node)
-            node_y.append(share_y[idx] + np.random.uniform(-0.005,0.005))
-            node_colors.append("rgba(0,0,0,0.5)")
-
-    # --- 5. FIGURE ---
-    dynamic_height = max(1200, len(medal_labels)*25)
-    fig = go.Figure(data=[go.Sankey(
-        arrangement="snap",
-        node=dict(
-            pad=10,
-            thickness=2,
-            line=dict(color="white", width=0),
-            label=all_labels,
-            color=node_colors,
-            x=node_x,
-            y=node_y
-        ),
-        link=dict(
-            source=flow_agg['source'].map(node_map),
-            target=flow_agg['target'].map(node_map),
-            value=flow_agg['value'],
-            color=flow_agg['color']
-        )
-    )])
-
-    fig.update_layout(
-        title_text=f"Impact of Hosting on {metric_label}",
-        font=dict(size=10, color="black", family="Arial"),
-        height=dynamic_height,
-        margin=dict(l=20, r=20, t=60, b=20),
-        annotations=[
-            dict(x=0.01, y=1.02, xref="paper", yref="paper", text="<b>Status</b>", showarrow=False, font=dict(size=14)),
-            dict(x=0.5, y=1.02, xref="paper", yref="paper", text=f"<b>{metric_label} (Exact)</b>", showarrow=False, font=dict(size=14)),
-            dict(x=0.99, y=1.02, xref="paper", yref="paper", text="<b>Share %</b>", showarrow=False, font=dict(size=14))
-        ]
-    )
-
-    return fig
 
 
 def show_host_advantage(host_data, medals_only, country_ref):
@@ -430,7 +301,7 @@ def show_host_advantage(host_data, medals_only, country_ref):
     # Data for YOUR Bar Chart (Subtraction logic)
     bar_data = calculate_host_advantage_for_bar_chart()
     # Data for HIS Sankey Chart (Division logic)
-    sankey_data = calculate_host_advantage_for_sankey()
+
     # Filter for only actual medals (already done in processor, but safe to keep)
     raw_for_dumbbell = raw_for_dumbbell.dropna(subset=['medal'])
     if metric_choice == "Gold Medals":
@@ -735,14 +606,9 @@ def show_host_advantage(host_data, medals_only, country_ref):
             st.write("")
 
         with col_chart:
-            fig_parcoords = create_parallel_coordinates_chart(medals_only, host_data, h_noc, focus_year_val)
+            fig_parcoords = create_parallel_coordinates_chart(medals_only, host_data, h_noc, focus_year_val, metric_col=metric_col)
             if fig_parcoords:
                 st.plotly_chart(fig_parcoords, width='stretch')
 
             st.divider()
-            st.subheader(f"Performance Flow Analysis: {full_country_name}")
 
-            # Sankey Chart (Integrated from SankeyChart branch)
-            fig_sankey = create_sankey_chart(medals_only, sankey_data, h_noc)
-            if fig_sankey:
-                st.plotly_chart(fig_sankey, width='stretch')
