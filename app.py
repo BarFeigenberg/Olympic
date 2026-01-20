@@ -117,8 +117,8 @@ try:
         # Option menu for page navigation
         selected_page = option_menu(
             menu_title="Navigation",
-            options=["Global Overview", "Host Advantage", "Athletics Deep Dive", "Wellness & Winning"],
-            icons=['globe', 'house', 'trophy', 'graph-up-arrow'],
+            options=["Project Overview", "Global Overview", "Host Advantage", "Athletics Deep Dive", "Wellness & Winning"],
+            icons=['info-circle', 'globe', 'house', 'trophy', 'graph-up-arrow'],
             menu_icon="cast",
             default_index=0,
             styles={
@@ -132,7 +132,11 @@ try:
     st.sidebar.divider()
 
     # --- 6. PAGE ROUTING ---
-    if selected_page == "Global Overview":
+    if selected_page == "Project Overview":
+        from project_overview import show_project_overview
+        show_project_overview()
+
+    elif selected_page == "Global Overview":
         from global_overview import show_global_overview
         show_global_overview(medals_only, total_medals_per_country, country_list, medals_data)
 
