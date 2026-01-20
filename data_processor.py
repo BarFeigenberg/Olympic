@@ -337,21 +337,6 @@ def calculate_host_advantage_for_bar_chart():
     return df
 
 
-def calculate_host_advantage_for_sankey():
-    """Returns host advantage as a ratio (relative change)."""
-    df = create_host_advantage_file()
-    if df.empty:
-        return df
-
-    # Division-based lift for flow-style visualizations
-    df['lift'] = df.apply(
-        lambda x: x['medal_percentage'] / x['avg_percentage']
-        if x['avg_percentage'] > 0 else 0,
-        axis=1
-    )
-    return df
-
-
 # ============================================================
 # Base Data Processors
 # ============================================================

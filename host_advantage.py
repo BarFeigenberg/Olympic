@@ -72,35 +72,41 @@ def create_host_dumbbell_chart(medals_only, host_data, h_noc, h_year, view_mode=
                 showlegend=False, hoverinfo='skip'
             ))
 
-        # 3. Past Average Marker (Red)
-        if s['past_avg'] is not None:
-            fig.add_trace(go.Scatter(
-                x=[s['past_avg']], y=[i],
-                mode='markers',
-                marker=dict(symbol='line-ns', size=19, line_color=c_red, color=c_red, line_width=4),
-                name='Past Avg', showlegend=True if i == 0 else False,
-                hovertemplate=f"Past Avg: {s['past_avg']:.1f}<extra></extra>"
-            ))
+            # 3. Past Average Marker (Red)
+            if s['past_avg'] is not None:
+                fig.add_trace(go.Scatter(
+                    x=[s['past_avg']], y=[i],
+                    mode='markers',
+                    marker=dict(symbol='line-ns', size=19, line_color=c_red, color=c_red, line_width=4),
+                    name='Past Avg',
+                    legendgroup='Past Avg',
+                    showlegend=True if i == 0 else False,
+                    hovertemplate=f"Past Avg: {s['past_avg']:.1f}<extra></extra>"
+                ))
 
-        # 4. Future Average Marker (Green)
-        if s['future_avg'] is not None:
-            fig.add_trace(go.Scatter(
-                x=[s['future_avg']], y=[i],
-                mode='markers',
-                marker=dict(symbol='line-ns', size=19, line_color=c_green, color=c_green, line_width=4),
-                name='Future Avg', showlegend=True if i == 0 else False,
-                hovertemplate=f"Future Avg: {s['future_avg']:.1f}<extra></extra>"
-            ))
+            # 4. Future Average Marker (Green)
+            if s['future_avg'] is not None:
+                fig.add_trace(go.Scatter(
+                    x=[s['future_avg']], y=[i],
+                    mode='markers',
+                    marker=dict(symbol='line-ns', size=19, line_color=c_green, color=c_green, line_width=4),
+                    name='Future Avg',
+                    legendgroup='Future Avg',
+                    showlegend=True if i == 0 else False,
+                    hovertemplate=f"Future Avg: {s['future_avg']:.1f}<extra></extra>"
+                ))
 
-        # 5. Host Year Marker (Blue)
-        if current_year:
-            fig.add_trace(go.Scatter(
-                x=[s['current']], y=[i],
-                mode='markers',
-                marker=dict(symbol='line-ns', size=23, line_color=c_blue, color=c_blue, line_width=6),
-                name=f'{h_year} (Host)', showlegend=True if i == 0 else False,
-                hovertemplate=f"{h_year}: {s['current']}<extra></extra>"
-            ))
+            # 5. Host Year Marker (Blue)
+            if current_year:
+                fig.add_trace(go.Scatter(
+                    x=[s['current']], y=[i],
+                    mode='markers',
+                    marker=dict(symbol='line-ns', size=23, line_color=c_blue, color=c_blue, line_width=6),
+                    name=f'{h_year} (Host)',
+                    legendgroup='Host Year',
+                    showlegend=True if i == 0 else False,
+                    hovertemplate=f"{h_year}: {s['current']}<extra></extra>"
+                ))
 
     # Add legend entry for the gray range bar
     fig.add_trace(go.Scatter(
@@ -298,11 +304,10 @@ def show_host_advantage(host_data, medals_only, country_ref):
 
     medals_raw = get_processed_medals_data_by_score_and_type()
     raw_for_dumbbell = medals_raw.copy()
-    # Data for YOUR Bar Chart (Subtraction logic)
+    # Data for Bar Chart
     bar_data = calculate_host_advantage_for_bar_chart()
-    # Data for HIS Sankey Chart (Division logic)
 
-    # Filter for only actual medals (already done in processor, but safe to keep)
+    # Filter for only actual medals
     raw_for_dumbbell = raw_for_dumbbell.dropna(subset=['medal'])
     if metric_choice == "Gold Medals":
          raw_for_dumbbell = raw_for_dumbbell[raw_for_dumbbell['medal'] == 'Gold']
