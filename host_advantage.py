@@ -304,8 +304,12 @@ def show_host_advantage(host_data, medals_only, country_ref):
 
     medals_raw = get_processed_medals_data_by_score_and_type()
     raw_for_dumbbell = medals_raw.copy()
-    # Data for Bar Chart
-    bar_data = calculate_host_advantage_for_bar_chart()
+    # Data for YOUR Bar Chart (Subtraction logic)
+    # FIX: Use the NEW dynamic Tally-based function to preserve original values while allowing filtering
+    bar_data = calculate_host_advantage_from_tally(metric_choice)
+    # 'lift' is already calculated as (medal_percentage - avg_percentage) inside this function
+
+    # Data for HIS Sankey Chart (Division logic)
 
     # Filter for only actual medals
     raw_for_dumbbell = raw_for_dumbbell.dropna(subset=['medal'])

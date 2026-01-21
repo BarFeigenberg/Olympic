@@ -326,15 +326,97 @@ def create_host_advantage_file():
     return host_advantage_df.sort_values('year')
 
 
-def calculate_host_advantage_for_bar_chart():
-    """Returns host advantage using subtraction (absolute boost/drop)."""
-    df = create_host_advantage_file()
-    if df.empty:
-        return df
 
-    # Explicit recalculation to ensure consistency
-    df['lift'] = df['medal_percentage'] - df['avg_percentage']
-    return df
+def calculate_host_advantage_from_tally(metric_type='Total Medals'):
+    """
+    Calculates host advantage stats using the PRE-PROCESSED TALLY data.
+    This reuses the robust cleaning logic from `get_processed_total_medals_data`
+    and avoids duplication while allowing dynamic metric selection.
+    """
+    # 1. Load CLEANED and COMBINED data (Historical + Paris)
+    tally_data = get_processed_total_medals_data()
+    games_df = load_raw_games_data()
+
+    if tally_data.empty or games_df.empty:
+        return pd.DataFrame()
+
+    # 2. Prepare Host Data (Summer only)
+    games_df.columns = games_df.columns.str.lower()
+    games_df['country_noc'] = games_df['country_noc'].replace(country_NOC_to_change)
+    games_summer = games_df[
+        (games_df['edition'].str.contains('Summer', case=False, na=False)) & 
+        (games_df['year'].between(1896, 2024))
+    ].copy()
+    
+    # Extract host country per year
+    hosts = games_summer[['year', 'city', 'country_noc']].rename(
+        columns={'city': 'host_city', 'country_noc': 'host_noc'})
+    hosts = hosts.drop_duplicates(subset=['year'])
+
+    # 3. Filter Tally Data for Summer Games (just in case, though get_processed usually does this)
+    tally_summer = tally_data[tally_data['edition'].str.contains('Summer', case=False, na=False)].copy()
+
+    # 4. Determine Metric Column
+    # Ensure numeric columns
+    for c in ['gold', 'silver', 'bronze', 'total']:
+        if c in tally_summer.columns:
+            tally_summer[c] = pd.to_numeric(tally_summer[c], errors='coerce').fillna(0)
+
+    target_col = 'total' # default
+    if metric_type == 'Gold Medals':
+        target_col = 'gold'
+    elif metric_type == 'Weighted Score':
+        tally_summer['score'] = (tally_summer['gold'] * 3) + (tally_summer['silver'] * 2) + (tally_summer['bronze'] * 1)
+        target_col = 'score'
+
+    # 5. Group by Year/NOC
+    tally_grouped = tally_summer.groupby(['year', 'country_noc'])[target_col].sum().reset_index()
+    tally_grouped.rename(columns={target_col: 'metric_value'}, inplace=True)
+
+    # 6. Compute Global Totals
+    global_totals = tally_grouped.groupby('year')['metric_value'].sum().reset_index()
+    global_totals.rename(columns={'metric_value': 'global_total'}, inplace=True)
+
+    # 7. Merge Host Info
+    host_advantage_df = pd.merge(
+        hosts,
+        tally_grouped,
+        left_on=['year', 'host_noc'],
+        right_on=['year', 'country_noc'],
+        how='left'
+    )
+
+    host_advantage_df = host_advantage_df[['year', 'host_city', 'host_noc', 'metric_value']].rename(
+        columns={'metric_value': 'total_medals'})
+    host_advantage_df['total_medals'] = host_advantage_df['total_medals'].fillna(0)
+
+    # 8. Compute Shares
+    host_advantage_df = pd.merge(host_advantage_df, global_totals, on='year', how='left')
+    host_advantage_df['medal_percentage'] = (
+        host_advantage_df['total_medals'] / host_advantage_df['global_total']
+    )
+
+    # 9. Compute Historical Average (Lift Logic)
+    all_Percentage = pd.merge(tally_grouped, global_totals, on='year', how='inner')
+    all_Percentage['calc_percentage'] = (
+        all_Percentage['metric_value'] / all_Percentage['global_total']
+    )
+
+    avg_Percentage = []
+    for _, row in host_advantage_df.iterrows():
+        country_history = all_Percentage[
+            (all_Percentage['country_noc'] == row['host_noc']) &
+            (all_Percentage['year'] != row['year'])
+        ]
+        avg_Percentage.append(
+            country_history['calc_percentage'].mean() if not country_history.empty else 0
+        )
+
+    host_advantage_df['avg_percentage'] = avg_Percentage
+    host_advantage_df['lift'] = host_advantage_df['medal_percentage'] - host_advantage_df['avg_percentage']
+
+    return host_advantage_df.sort_values('year')
+
 
 
 # ============================================================
