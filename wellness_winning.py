@@ -18,11 +18,12 @@ def show_wellness_winning(gap_df):
 
         # --- Define color palette for continents ---
         olympic_palette = {
-            "Europe": "#0081C8",
-            "Asia": "#00A651",
-            "Africa": "#000000",
-            "Americas": "#EE334E",
-            "Oceania": "#FCB131"
+            # Okabe-Ito Palette (Colorblind Friendly)
+            "Europe": "#009E73",    # Bluish Green (תכלת כהה/טורקיז - אירופה)
+            "Asia": "#E69F00",      # Orange (כתום - אסיה)
+            "Africa": "#F0E442",    # Yellow (צהוב - אפריקה)
+            "Americas": "#0072B2",  # Blue (כחול כהה - אמריקה)
+            "Oceania": "#56B4E9"    # Sky Blue (תכלת בהיר - אוקיאניה)
         }
 
         # --- Top Row: Title ---
