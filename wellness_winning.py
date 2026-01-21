@@ -80,7 +80,7 @@ def show_wellness_winning(gap_df):
             y_axis_title = f"{display_name} / Million (Non-Linear)"
             tooltip_label = f"{display_name} (Per 1M)"
             # Custom tick configuration for non-linear y-axis
-            custom_ticks = [0, 1, 2, 5, 15, 120] if metric_mode == "Weighted Score" else [0, 1, 2, 4, 10, 20, 40, 60]
+            custom_ticks = [0, 1, 2, 5, 15, 120] if metric_mode == "Weighted Score" else [0, 1, 2, 4, 20, 60]
         else:
             gap_df['plot_value'] = gap_df[base_col]
             chart_title_text = f"Health vs {display_name}"
