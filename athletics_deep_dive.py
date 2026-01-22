@@ -233,8 +233,8 @@ def show_athletics_deep_dive(athletics_df, country_ref):
                     merged_filtered['country'])
 
                 # Define color shades based on gender
-                blue_shades = ['#deebf7', '#c6dbef', '#9ecae1', '#6baed6', '#4292c6', '#2171b5', '#08519c', '#08306b']
-                pink_shades = ['#ffe8eb', '#fde0dd', '#fcc5c0', '#fa9fb5', '#f768a1', '#dd3497', '#ae017e', '#7a0177']
+                blue_shades = ["#a9d6e5", "#89c2d9", "#61a5c2", "#468faf", "#2a6f97", "#014f86", "#013a63", "#012a4a"]
+                pink_shades = ["#ffccd5", "#ff8fa3", "#ff758f", "#ff4d6d", "#c9184a", "#a4133c", "#800f2f", "#590d22"]
                 current_shades = pink_shades if 'Women' in str(selected_gender) else blue_shades
 
                 # Determine which column to use for coloring the chart
@@ -335,7 +335,7 @@ def show_athletics_deep_dive(athletics_df, country_ref):
     historical_record_breaks = record_breaks.drop(current_record_holder.index)
 
     # Color definitions
-    men_color, women_color = '#1E90FF', 'violet'
+    men_color, women_color = '#00a8e8', '#f694c1'
     dark_men, dark_women = '#0047AB', '#C71585'  # Darker shades for current record points
 
     # --- 4c. CREATE TREND LINE PLOT ---
