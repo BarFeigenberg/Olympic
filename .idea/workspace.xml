@@ -5,17 +5,23 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f1e984f9-9510-4502-b0ee-a2e4b4b9bb16" name="Changes" comment="Update the map of global_overview.py and ect...">
-      <change afterPath="$PROJECT_DIR$/.streamlit/config.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.name" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.name" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_processor.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_processor.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/host_advantage.py" beforeDir="false" afterPath="$PROJECT_DIR$/host_advantage.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project_overview.py" beforeDir="false" afterPath="$PROJECT_DIR$/project_overview.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Olympics_Country.csv" beforeDir="false" afterPath="$PROJECT_DIR$/Olympics_Country.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/athletics_deep_dive.py" beforeDir="false" afterPath="$PROJECT_DIR$/athletics_deep_dive.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/global_overview.py" beforeDir="false" afterPath="$PROJECT_DIR$/global_overview.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/wellness_winning.py" beforeDir="false" afterPath="$PROJECT_DIR$/wellness_winning.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />

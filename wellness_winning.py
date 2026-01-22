@@ -18,12 +18,11 @@ def show_wellness_winning(gap_df):
 
         # --- Define color palette for continents ---
         olympic_palette = {
-            # Okabe-Ito Palette (Colorblind Friendly)
-            "Europe": "#009E73",    # Bluish Green (תכלת כהה/טורקיז - אירופה)
-            "Asia": "#E69F00",      # Orange (כתום - אסיה)
-            "Africa": "#F0E442",    # Yellow (צהוב - אפריקה)
-            "Americas": "#0072B2",  # Blue (כחול כהה - אמריקה)
-            "Oceania": "#56B4E9"    # Sky Blue (תכלת בהיר - אוקיאניה)
+            "Europe": "#009E73",
+            "Asia": "#E69F00",
+            "Africa": "#F0E442",
+            "Americas": "#0072B2",
+            "Oceania": "#56B4E9"
         }
 
         # --- Top Row: Title ---
@@ -31,9 +30,7 @@ def show_wellness_winning(gap_df):
         st.divider()
 
         # --- Controls Row (Left Aligned) ---
-        # We use columns [1, 1, 5] to keep buttons compact on the left
-        col_ctrl1, col_ctrl2, col_spacer = st.columns([1, 1, 5], gap="small")
-
+        col_ctrl1, col_ctrl2, col_spacer = st.columns([3, 3, 5], gap="small")
         # Metric selection
         with col_ctrl1:
             metric_mode = st.radio(

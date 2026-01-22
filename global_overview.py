@@ -181,10 +181,11 @@ def show_global_overview(medals_only_unused, total_medals_per_country_unused, co
     # --- 6. Plot Choropleth Map ---
     fig_map = px.choropleth(
         map_data[map_data['bin_label'] != 'nan'],
-        locations="country", locationmode="country names", color="bin_label",
-        hover_name="country", hover_data={"bin_label": False, "country": False, "value": ":,", "population": ":,",
-                                          "medals_per_million": ":.2f"},
-        color_discrete_sequence=px.colors.sequential.Reds[1:9],
+        locations="country",
+        locationmode="country names", color="bin_label",
+        hover_name="country",
+        hover_data={"bin_label": False, "country": False, "value": ":,", "population": ":,", "medals_per_million": ":.2f"},
+        color_discrete_sequence=["#d8f3dc","#b7e4c7","#95d5b2","#74c69d","#52b788","#40916c","#2d6a4f","#1b4332"],
         category_orders={"bin_label": bin_labels},
         projection="natural earth"
     )
@@ -244,7 +245,7 @@ def show_global_overview(medals_only_unused, total_medals_per_country_unused, co
 
         fig_trend = px.line(
             trend_long, x='year', y='Count', color='Medal Type', markers=False,
-            color_discrete_map={"Total": "#DC143C", "Gold": "#DAA520", "Silver": "#A8A8A8", "Bronze": "#cc5803"}
+            color_discrete_map={"Total": "#95d5b2", "Gold": "#DAA520", "Silver": "#A8A8A8", "Bronze": "#cc5803"}
         )
         fig_trend.update_layout(
             height=500, yaxis_title=y_title, xaxis_title="Year",

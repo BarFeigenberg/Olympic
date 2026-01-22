@@ -265,10 +265,15 @@ def show_athletics_deep_dive(athletics_df, country_ref):
                     merged_filtered, x="weight", y="height", color="Result Range",
                     color_discrete_map=color_map, category_orders={"Result Range": ordered_labels},
                     hover_name="name",
-                    hover_data={"year": True, "country_full": True, "numeric_result": True, "Age": True,
+                    hover_data={"year": True, "country_full": True, "numeric_result": ":.2f", "Age": True,
                                 "weight": False, "height": False, "country": False, "Result Range": False},
-                    labels={"weight": "Weight (kg)", "height": "Height (cm)", "country_full": "Country",
-                            "Result Range": f"Result ({unit_title})"}
+                    labels={
+                        "weight": "Weight (kg)",
+                        "height": "Height (cm)",
+                        "country_full": "Country",
+                        "numeric_result": "Result",
+                        "Result Range": f"Result ({unit_title})"
+                    }
                 )
                 fig_phys.update_layout(height=600, plot_bgcolor='white', margin=dict(t=10))
                 fig_phys.update_traces(marker=dict(size=20, opacity=0.8))
